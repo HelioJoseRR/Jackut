@@ -4,9 +4,7 @@ import br.ufal.ic.p2.jackut.exceptions.*;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * A classe Sistema representa o sistema principal do Jackut.
@@ -14,27 +12,24 @@ import java.util.Set;
  */
 public class Sistema implements Serializable {
     private Map<String, Usuario> usuarios;
-    private Map<String, String> sessoes;
-    private int nextSessionId;
+    private Sessao gerenciadorSessoes;
     private static final long serialVersionUID = 1L;
 
     /**
      * Construtor da classe Sistema.
-     * Inicializa as coleções de usuários e sessões, e o ID da próxima sessão.
+     * Inicializa as coleções de usuários e o gerenciador de sessões.
      */
     public Sistema() {
-        this.sessoes = new HashMap<>();
-        this.nextSessionId = 1;
         this.usuarios = new HashMap<>();
+        this.gerenciadorSessoes = new Sessao();
     }
 
     /**
      * Reseta o sistema, limpando as coleções de usuários e sessões.
      */
     public void zerarSistema() {
-        this.sessoes = new HashMap<>();
-        this.nextSessionId = 1;
         this.usuarios = new HashMap<>();
+        this.gerenciadorSessoes = new Sessao();
     }
 
     /**
@@ -44,10 +39,11 @@ public class Sistema implements Serializable {
      * @return O objeto Usuario correspondente.
      * @throws UserNotFoundException Se o usuário não estiver cadastrado.
      */
-    private Usuario verificarUsuarioExiste(String login) {
+    public Usuario verificarUsuarioExiste(String login) {
         if (!this.usuarios.containsKey(login)) {
-            throw new UserNotFoundException();
+            throw new UserNotFoundException("Usuário não cadastrado.");
         }
+
         return this.usuarios.get(login);
     }
 
@@ -115,10 +111,6 @@ public class Sistema implements Serializable {
         if (!usuario.isPasswordValid(senha)) {
             throw new AuthenticationException();
         }
-
-        String sessionId = String.valueOf(this.nextSessionId);
-        this.sessoes.put(sessionId, login);
-        this.nextSessionId++;
 
         return login;
     }
@@ -232,5 +224,14 @@ public class Sistema implements Serializable {
         }
 
         return usuario.getRecados().poll();
+    }
+
+    /**
+     * Obtém o gerenciador de sessões.
+     *
+     * @return O objeto Sessao que gerencia as sessões.
+     */
+    public Sessao getGerenciadorSessoes() {
+        return gerenciadorSessoes;
     }
 }

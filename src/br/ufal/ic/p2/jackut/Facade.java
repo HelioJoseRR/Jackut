@@ -45,7 +45,7 @@ public class Facade implements Serializable {
         if (!file.exists()) {
             return;
         }
-        
+
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
             sistema = (Sistema) in.readObject();
 
@@ -88,10 +88,43 @@ public class Facade implements Serializable {
      *
      * @param login O login do usuário.
      * @param senha A senha do usuário.
-     * @return O login do usuário.
+     * @return O ID da sessão criada.
      */
     public String abrirSessao(String login, String senha) {
-        return sistema.abrirSessao(login, senha);
+        // Primeiro autentica o usuário
+        String loginAutenticado = sistema.abrirSessao(login, senha);
+        // Em seguida, cria uma sessão para o usuário autenticado
+        return sistema.getGerenciadorSessoes().criarSessao(loginAutenticado);
+    }
+
+    /**
+     * Encerra uma sessão específica.
+     *
+     * @param sessionId O ID da sessão a ser encerrada.
+     * @return true se a sessão foi encerrada com sucesso, false caso contrário.
+     */
+    public boolean encerrarSessao(String sessionId) {
+        return sistema.getGerenciadorSessoes().encerrarSessao(sessionId);
+    }
+
+    /**
+     * Verifica se uma sessão existe.
+     *
+     * @param sessionId O ID da sessão.
+     * @return true se a sessão existir, false caso contrário.
+     */
+    public boolean existeSessao(String sessionId) {
+        return sistema.getGerenciadorSessoes().existeSessao(sessionId);
+    }
+
+    /**
+     * Obtém o login do usuário associado a uma sessão.
+     *
+     * @param sessionId O ID da sessão.
+     * @return O login do usuário associado à sessão, ou null se a sessão não existir.
+     */
+    public String getLoginDaSessao(String sessionId) {
+        return sistema.getGerenciadorSessoes().getLoginDaSessao(sessionId);
     }
 
     /**
@@ -104,63 +137,104 @@ public class Facade implements Serializable {
     /**
      * Edita o perfil de um usuário.
      *
-     * @param id O ID do usuário.
+     * @param sessionId O ID da sessão do usuário.
      * @param atributo O nome do atributo a ser editado.
      * @param valor O novo valor do atributo.
+     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
-    public void editarPerfil(String id, String atributo, String valor) {
-        sistema.editarPerfil(id, atributo, valor);
+    public void editarPerfil(String sessionId, String atributo, String valor) {
+        String login = getLoginDaSessao(sessionId);
+        if (login == null) {
+            throw new SessionNotFoundException("Usuário não cadastrado.");
+        }
+        sistema.editarPerfil(login, atributo, valor);
     }
 
     /**
      * Verifica se dois usuários são amigos.
      *
-     * @param login O login do usuário.
+     * @param sessionId O ID da sessão do usuário.
      * @param amigo O login do amigo.
      * @return true se os usuários são amigos, false caso contrário.
+     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
-    public boolean ehAmigo(String login, String amigo) {
+    public boolean ehAmigo(String sessionId, String amigo) {
+        String login = getLoginDaSessao(sessionId);
+
+        // Verifica se o sessionId é um login válido usando o método público
+        if (login == null && sistema.verificarUsuarioExiste(sessionId) != null) {
+            login = sessionId;
+        }
+        else if (login == null) {
+            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+        }
+
         return sistema.ehAmigo(login, amigo);
     }
 
     /**
      * Adiciona um amigo para um usuário.
      *
-     * @param login O login do usuário.
+     * @param sessionId O ID da sessão do usuário.
      * @param amigo O login do amigo a ser adicionado.
+     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
-    public void adicionarAmigo(String login, String amigo) {
+    public void adicionarAmigo(String sessionId, String amigo) {
+        String login = getLoginDaSessao(sessionId);
+        if (login == null) {
+            throw new SessionNotFoundException("Usuário não cadastrado.");
+        }
         sistema.adicionarAmigo(login, amigo);
     }
 
     /**
      * Obtém a lista de amigos de um usuário.
      *
-     * @param login O login do usuário.
+     * @param sessionId O ID da sessão do usuário.
      * @return Uma string contendo os logins dos amigos do usuário.
+     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
-    public String getAmigos(String login) {
+    public String getAmigos(String sessionId) {
+        String login = getLoginDaSessao(sessionId);
+
+        if (login == null && sistema.verificarUsuarioExiste(sessionId) != null) {
+            login = sessionId;
+        }
+        else if (login == null) {
+            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+        }
+
         return sistema.getAmigos(login);
     }
 
     /**
      * Envia um recado para um usuário.
      *
-     * @param id O ID do usuário que envia o recado.
-     * @param destinatario O ID do usuário que recebe o recado.
+     * @param sessionId O ID da sessão do usuário que envia o recado.
+     * @param destinatario O login do usuário que recebe o recado.
      * @param recado O conteúdo do recado.
+     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
-    public void enviarRecado(String id, String destinatario, String recado) {
-        sistema.enviarRecado(id, destinatario, recado);
+    public void enviarRecado(String sessionId, String destinatario, String recado) {
+        String login = getLoginDaSessao(sessionId);
+        if (login == null) {
+            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+        }
+        sistema.enviarRecado(login, destinatario, recado);
     }
 
     /**
      * Lê um recado de um usuário.
      *
-     * @param id O ID do usuário.
+     * @param sessionId O ID da sessão do usuário.
      * @return O conteúdo do recado.
+     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
-    public String lerRecado(String id) {
-        return sistema.lerRecado(id);
+    public String lerRecado(String sessionId) {
+        String login = getLoginDaSessao(sessionId);
+        if (login == null) {
+            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+        }
+        return sistema.lerRecado(login);
     }
 }
