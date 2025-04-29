@@ -19,8 +19,14 @@ public class Facade implements Serializable {
      * Inicializa o sistema lendo os dados do arquivo "sistema.dat".
      */
     public Facade() {
-        this.sistema = new Sistema(); // Inicialização padrão para evitar NullPointerException
-        this.readSistema();
+        this.sistema = new Sistema(); // Inicialização padrão
+        try {
+            this.readSistema();
+        } catch (SystemSaveException e) {
+            // Se houver erro ao ler o arquivo, inicia com um sistema novo
+            // e não propaga a exceção, já que temos um sistema válido mesmo sem arquivo
+            this.sistema = new Sistema();
+        }
     }
 
     /**
@@ -43,12 +49,15 @@ public class Facade implements Serializable {
     public void readSistema() {
         File file = new File(SISTEMA_FILE);
         if (!file.exists()) {
+            // Se o arquivo não existir, apenas mantém o sistema atual
             return;
         }
 
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
-            sistema = (Sistema) in.readObject();
-
+            Sistema sistemaLido = (Sistema) in.readObject();
+            if (sistemaLido != null) {
+                this.sistema = sistemaLido;
+            }
         } catch (IOException | ClassNotFoundException e) {
             throw new SystemSaveException("Erro ao ler o sistema");
         }
@@ -91,9 +100,7 @@ public class Facade implements Serializable {
      * @return O ID da sessão criada.
      */
     public String abrirSessao(String login, String senha) {
-        // Primeiro autentica o usuário
         String loginAutenticado = sistema.abrirSessao(login, senha);
-        // Em seguida, cria uma sessão para o usuário autenticado
         return sistema.getGerenciadorSessoes().criarSessao(loginAutenticado);
     }
 
@@ -162,7 +169,7 @@ public class Facade implements Serializable {
         String login = getLoginDaSessao(sessionId);
 
         // Verifica se o sessionId é um login válido usando o método público
-        if (login == null && sistema.verificarUsuarioExiste(sessionId) != null) {
+        if (login == null && sistema.verificaUsuarioExiste(sessionId)) {
             login = sessionId;
         }
         else if (login == null) {
@@ -197,7 +204,7 @@ public class Facade implements Serializable {
     public String getAmigos(String sessionId) {
         String login = getLoginDaSessao(sessionId);
 
-        if (login == null && sistema.verificarUsuarioExiste(sessionId) != null) {
+        if (login == null && sistema.verificaUsuarioExiste(sessionId)) {
             login = sessionId;
         }
         else if (login == null) {
@@ -236,5 +243,21 @@ public class Facade implements Serializable {
             throw new SessionNotFoundException("Sessão inválida ou expirada.");
         }
         return sistema.lerRecado(login);
+    }
+
+    public void criarComunidade(String sessionID, String nome, String descricao){
+        this.sistema.getGerenciadorSessoes().criarComunidade(sessionID, nome, descricao);
+    }
+
+    public String getDescricaoComunidade(String nome){
+        return this.sistema.getGerenciadorSessoes().getDescricaoComunidade(nome);
+    }
+
+    public String getDonoComunidade(String nome){
+        return this.sistema.getGerenciadorSessoes().getDonoComunidade(nome);
+    }
+
+    public String getMembrosComunidade(String nome){
+        return this.sistema.getGerenciadorSessoes().getMembrosComunidade(nome);
     }
 }

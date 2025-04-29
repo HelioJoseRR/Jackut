@@ -73,7 +73,7 @@ public class Main {
                 "tests/us9_2.txt"
         };
 
-        EasyAccept.main(args2);
+        /*EasyAccept.main(args2);
         EasyAccept.main(args3);
         EasyAccept.main(args4);
         EasyAccept.main(args5);
@@ -82,14 +82,14 @@ public class Main {
         EasyAccept.main(args8);
         EasyAccept.main(args9);
         EasyAccept.main(args10);
-        EasyAccept.main(args11);
+        EasyAccept.main(args11);*/
         EasyAccept.main(args12);
-        EasyAccept.main(args13);
+        /*EasyAccept.main(args13);
         EasyAccept.main(args14);
         EasyAccept.main(args15);
         EasyAccept.main(args16);
         EasyAccept.main(args17);
         EasyAccept.main(args18);
-        EasyAccept.main(args19);
+        EasyAccept.main(args19);*/
     }
 }

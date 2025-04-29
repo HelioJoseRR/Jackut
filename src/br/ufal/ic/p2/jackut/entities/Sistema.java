@@ -39,12 +39,16 @@ public class Sistema implements Serializable {
      * @return O objeto Usuario correspondente.
      * @throws UserNotFoundException Se o usuário não estiver cadastrado.
      */
-    public Usuario verificarUsuarioExiste(String login) {
+    public Usuario retornaUsuario(String login) {
         if (!this.usuarios.containsKey(login)) {
             throw new UserNotFoundException("Usuário não cadastrado.");
         }
 
         return this.usuarios.get(login);
+    }
+
+    public boolean verificaUsuarioExiste(String login) {
+        return this.usuarios.containsKey(login);
     }
 
     /**
@@ -56,7 +60,7 @@ public class Sistema implements Serializable {
      * @throws UserNotFoundException Se o usuário não estiver cadastrado.
      */
     public String getAtributoUsuario(String login, String atributo) {
-        Usuario usuario = verificarUsuarioExiste(login);
+        Usuario usuario = retornaUsuario(login);
 
         switch (atributo) {
             case "nome":
@@ -124,7 +128,7 @@ public class Sistema implements Serializable {
      * @throws UserNotFoundException Se o usuário não estiver cadastrado.
      */
     public void editarPerfil(String id, String atributo, String valor) {
-        Usuario usuario = verificarUsuarioExiste(id);
+        Usuario usuario = retornaUsuario(id);
         usuario.setAtributo(atributo, valor);
     }
 
@@ -136,7 +140,7 @@ public class Sistema implements Serializable {
      * @return true se os usuários são amigos, false caso contrário.
      */
     public boolean ehAmigo(String login, String amigo) {
-        Usuario usuario = verificarUsuarioExiste(login);
+        Usuario usuario = retornaUsuario(login);
         return usuario.getAmigos().contains(amigo);
     }
 
@@ -153,8 +157,8 @@ public class Sistema implements Serializable {
             throw new FriendshipException("Usuário não pode adicionar a si mesmo como amigo.");
         }
 
-        Usuario usuarioRecebeConvite = verificarUsuarioExiste(amigo);
-        Usuario usuarioEnviaConvite = verificarUsuarioExiste(login);
+        Usuario usuarioRecebeConvite = retornaUsuario(amigo);
+        Usuario usuarioEnviaConvite = retornaUsuario(login);
 
         if (usuarioEnviaConvite.getConvitesAmizade().contains(amigo)) {
             // Aceitar convite pendente (ambos já enviaram convites)
@@ -184,7 +188,7 @@ public class Sistema implements Serializable {
      * @return Uma string contendo os logins dos amigos do usuário.
      */
     public String getAmigos(String login) {
-        Usuario usuario = verificarUsuarioExiste(login);
+        Usuario usuario = retornaUsuario(login);
         String amigos = String.join(",", usuario.getAmigos());
         return "{" + amigos + "}";
     }
@@ -203,8 +207,8 @@ public class Sistema implements Serializable {
             throw new MessageException("Usuário não pode enviar recado para si mesmo.");
         }
 
-        Usuario enviaRecado = verificarUsuarioExiste(id);
-        Usuario recebeRecado = verificarUsuarioExiste(destinatario);
+        Usuario enviaRecado = retornaUsuario(id);
+        Usuario recebeRecado = retornaUsuario(destinatario);
 
         recebeRecado.adicionarRecado(recado);
     }
@@ -217,7 +221,7 @@ public class Sistema implements Serializable {
      * @throws MessageException Se não houver recados.
      */
     public String lerRecado(String id) {
-        Usuario usuario = verificarUsuarioExiste(id);
+        Usuario usuario = retornaUsuario(id);
 
         if (usuario.getRecados().isEmpty()) {
             throw new MessageException("Não há recados.");
