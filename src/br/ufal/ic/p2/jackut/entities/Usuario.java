@@ -4,10 +4,10 @@ import br.ufal.ic.p2.jackut.exceptions.ProfileAttributeException;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A classe Usuario representa um usuário no sistema Jackut.
- * Implementa a interface Serializable para permitir a serialização dos objetos.
  */
 public class Usuario implements Serializable {
     private String login;
@@ -16,15 +16,13 @@ public class Usuario implements Serializable {
     private Map<String, String> atributos;
     private Set<String> convitesAmizade;
     private Set<String> amigos;
-    private Queue<String> recados;
+    private Queue<Recado> recados;
+    private List<String> comunidadesCadastradas;
+    private Queue<Mensagem> mensagens;
     private static final long serialVersionUID = 1L;
 
     /**
      * Construtor da classe Usuario.
-     *
-     * @param login O login do usuário.
-     * @param senha A senha do usuário.
-     * @param nome O nome do usuário.
      */
     public Usuario(String login, String senha, String nome) {
         this.login = login;
@@ -34,12 +32,19 @@ public class Usuario implements Serializable {
         this.amigos = new LinkedHashSet<>();
         this.convitesAmizade = new LinkedHashSet<>();
         this.recados = new LinkedList<>();
+        this.comunidadesCadastradas = new ArrayList<>();
+        this.mensagens = new LinkedList<>();
+    }
+
+    /**
+     * Verifica se a senha fornecida é válida.
+     */
+    public boolean isPasswordValid(String password) {
+        return this.senha.equals(password);
     }
 
     /**
      * Obtém o login do usuário.
-     *
-     * @return O login do usuário.
      */
     public String getLogin() {
         return login;
@@ -47,8 +52,6 @@ public class Usuario implements Serializable {
 
     /**
      * Obtém o nome do usuário.
-     *
-     * @return O nome do usuário.
      */
     public String getNome() {
         return nome;
@@ -56,9 +59,6 @@ public class Usuario implements Serializable {
 
     /**
      * Define um atributo do usuário.
-     *
-     * @param atributo O nome do atributo.
-     * @param valor O valor do atributo.
      */
     public void setAtributo(String atributo, String valor) {
         this.atributos.put(atributo, valor);
@@ -66,126 +66,102 @@ public class Usuario implements Serializable {
 
     /**
      * Obtém o valor de um atributo do usuário.
-     *
-     * @param atributo O nome do atributo.
-     * @return O valor do atributo.
-     * @throws ProfileAttributeException Se o atributo não estiver preenchido.
      */
     public String getAtributo(String atributo) {
-        if (!this.hasAtributo(atributo)) {
+        if (!this.atributos.containsKey(atributo)) {
             throw new ProfileAttributeException("Atributo não preenchido.");
         }
-
         return this.atributos.get(atributo);
     }
 
     /**
-     * Define o login do usuário.
-     *
-     * @param login O novo login do usuário.
-     */
-    public void setLogin(String login) {
-        this.login = login;
-    }
-
-    /**
-     * Define a senha do usuário.
-     *
-     * @param senha A nova senha do usuário.
-     */
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
-
-    /**
-     * Define o nome do usuário.
-     *
-     * @param nome O novo nome do usuário.
-     */
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    /**
      * Obtém os convites de amizade do usuário.
-     *
-     * @return Um conjunto de IDs de convites de amizade.
      */
     public Set<String> getConvitesAmizade() {
         return convitesAmizade;
     }
 
     /**
-     * Remove um convite de amizade.
-     *
-     * @param id O ID do convite de amizade a ser removido.
-     */
-    public void removerConviteAmizade(String id) {
-        this.convitesAmizade.remove(id);
-    }
-
-    /**
      * Adiciona um convite de amizade.
-     *
-     * @param id O ID do convite de amizade a ser adicionado.
      */
     public void adicionarConviteAmizade(String id) {
         this.convitesAmizade.add(id);
     }
 
     /**
+     * Remove um convite de amizade.
+     */
+    public void removerConviteAmizade(String id) {
+        this.convitesAmizade.remove(id);
+    }
+
+    /**
      * Obtém a lista de amigos do usuário.
-     *
-     * @return Um conjunto de IDs de amigos.
      */
     public Set<String> getAmigos() {
         return amigos;
     }
 
     /**
-     * Verifica se a senha fornecida é válida.
-     *
-     * @param password A senha a ser verificada.
-     * @return true se a senha for válida, false caso contrário.
-     */
-    public boolean isPasswordValid(String password) {
-        return this.senha.equals(password);
-    }
-
-    /**
-     * Verifica se o usuário possui um determinado atributo.
-     *
-     * @param atributo O nome do atributo.
-     * @return true se o atributo existir, false caso contrário.
-     */
-    public boolean hasAtributo(String atributo) {
-        return this.atributos.containsKey(atributo);
-    }
-
-    /**
      * Adiciona um amigo ao usuário.
-     *
-     * @param amigo O ID do amigo a ser adicionado.
      */
     public void adicionarAmigo(String amigo) {
         this.amigos.add(amigo);
     }
 
     /**
+     * Formata a lista de amigos para exibição.
+     */
+    public String getAmigosFormatado() {
+        String amigosStr = String.join(",", amigos);
+        return "{" + amigosStr + "}";
+    }
+
+    /**
      * Adiciona um recado ao usuário.
      *
-     * @param recado O recado a ser adicionado.
+     * @param remetente O login do usuário que enviou o recado
+     * @param conteudo O conteúdo do recado
      */
-    public void adicionarRecado(String recado) {
-        recados.add(recado);
+    public void adicionarRecado(String remetente, String conteudo) {
+        recados.add(new Recado(remetente, this.login, conteudo));
     }
 
     /**
      * Obtém a fila de recados do usuário.
-     *
-     * @return A fila de recados.
      */
-    public Queue<String> getRecados() {
+    public Queue<Recado> getRecados() {
         return this.recados;
+    }
+
+    /**
+     * Adiciona uma comunidade ao usuário.
+     */
+    public void addComunidade(String comunidade) {
+        this.comunidadesCadastradas.add(comunidade);
+    }
+
+    /**
+     * Obtém as comunidades cadastradas do usuário, formatadas.
+     */
+    public String getComunidadesCadastradas() {
+        return this.comunidadesCadastradas.stream()
+                .collect(Collectors.joining(",", "{", "}"));
+    }
+
+    /**
+     * Obtém as mensagens do usuário.
+     */
+    public Queue<Mensagem> getMensagens() {
+        return this.mensagens;
+    }
+
+    /**
+     * Adiciona uma mensagem ao usuário.
+     *
+     * @param mensagem A mensagem a ser adicionada
+     */
+    public void adicionarMensagem(Mensagem mensagem) {
+        this.mensagens.add(mensagem);
     }
 }

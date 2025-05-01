@@ -3,8 +3,8 @@ package br.ufal.ic.p2.jackut.entities;
 import br.ufal.ic.p2.jackut.exceptions.CommunityException;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A classe Sessao representa o gerenciador de sessões de usuários no sistema Jackut.
@@ -13,7 +13,6 @@ import java.util.Map;
 public class Sessao implements Serializable {
     private Map<String, String> sessoes;
     private int nextSessionId;
-    private Map<String, Comunidade> comunidades;
     private static final long serialVersionUID = 1L;
 
     /**
@@ -21,8 +20,7 @@ public class Sessao implements Serializable {
      * Inicializa as coleções de sessões e o ID da próxima sessão.
      */
     public Sessao() {
-        this.sessoes = new HashMap<>();
-        this.comunidades = new HashMap<>();
+        this.sessoes = new LinkedHashMap<>();
         this.nextSessionId = 1;
     }
 
@@ -81,37 +79,4 @@ public class Sessao implements Serializable {
         this.nextSessionId = 1;
     }
 
-    public void criarComunidade(String id, String nome, String descricao) {
-        if (this.comunidades.containsKey(nome)) {
-            throw new CommunityException("Comunidade com esse nome já existe.");
-        }
-
-        Comunidade comunidade = new Comunidade(id, nome, descricao);
-        comunidade.addMembro(sessoes.get(id));
-        this.comunidades.put(nome, comunidade);
-    }
-
-    public String getDescricaoComunidade(String nome) throws CommunityException {
-        if (!this.comunidades.containsKey(nome)) {
-            throw new CommunityException("Comunidade não existe.");
-        }
-
-        return this.comunidades.get(nome).getDescricao();
-    }
-
-    public String getDonoComunidade(String nome) throws CommunityException{
-        if (!this.comunidades.containsKey(nome)) {
-            throw new CommunityException("Comunidade não existe.");
-        }
-
-        return sessoes.get(this.comunidades.get(nome).getSessionID());
-    }
-
-    public String getMembrosComunidade(String nomeComunidade) throws CommunityException{
-        if (!this.comunidades.containsKey(nomeComunidade)){
-            throw new CommunityException("Comunidade não existe.");
-        }
-
-        return this.comunidades.get(nomeComunidade).getMembros();
-    }
 }

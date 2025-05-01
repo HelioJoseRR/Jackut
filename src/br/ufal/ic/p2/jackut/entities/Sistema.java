@@ -8,60 +8,136 @@ import java.util.Map;
 
 /**
  * A classe Sistema representa o sistema principal do Jackut.
- * Implementa a interface Serializable para permitir a serialização dos objetos.
  */
 public class Sistema implements Serializable {
     private Map<String, Usuario> usuarios;
-    private Sessao gerenciadorSessoes;
+    private Map<String, Comunidade> comunidades;
+    private Map<String, String> sessoes; // Map de sessionId para login
+    private int nextSessionId;
     private static final long serialVersionUID = 1L;
 
     /**
      * Construtor da classe Sistema.
-     * Inicializa as coleções de usuários e o gerenciador de sessões.
      */
     public Sistema() {
         this.usuarios = new HashMap<>();
-        this.gerenciadorSessoes = new Sessao();
+        this.comunidades = new HashMap<>();
+        this.sessoes = new HashMap<>();
+        this.nextSessionId = 1;
     }
 
     /**
-     * Reseta o sistema, limpando as coleções de usuários e sessões.
+     * Reseta o sistema.
      */
     public void zerarSistema() {
         this.usuarios = new HashMap<>();
-        this.gerenciadorSessoes = new Sessao();
+        this.comunidades = new HashMap<>();
+        this.sessoes = new HashMap<>();
+        this.nextSessionId = 1;
     }
 
     /**
      * Verifica se um usuário existe no sistema.
-     *
-     * @param login O login do usuário.
-     * @return O objeto Usuario correspondente.
-     * @throws UserNotFoundException Se o usuário não estiver cadastrado.
      */
-    public Usuario retornaUsuario(String login) {
-        if (!this.usuarios.containsKey(login)) {
-            throw new UserNotFoundException("Usuário não cadastrado.");
-        }
-
-        return this.usuarios.get(login);
-    }
-
     public boolean verificaUsuarioExiste(String login) {
         return this.usuarios.containsKey(login);
     }
 
     /**
+     * Retorna um usuário pelo login.
+     */
+    private Usuario getUsuario(String login) {
+        if (!verificaUsuarioExiste(login)) {
+            throw new UserNotFoundException("Usuário não cadastrado.");
+        }
+
+        return usuarios.get(login);
+    }
+
+    /**
+     * Obtém o login associado a uma sessão.
+     */
+    public String getLoginDaSessao(String sessionId) {
+        return sessoes.get(sessionId);
+    }
+
+    /**
+     * Verifica se uma sessão existe.
+     */
+    public boolean existeSessao(String sessionId) {
+        return sessoes.containsKey(sessionId);
+    }
+
+    /**
+     * Encerra uma sessão.
+     */
+    public boolean encerrarSessao(String sessionId) {
+        if (existeSessao(sessionId)) {
+            sessoes.remove(sessionId);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Obtém o usuário associado a uma sessão.
+     */
+    private Usuario getUsuarioDaSessao(String sessionId) {
+        String login = getLoginDaSessao(sessionId);
+
+        if (login == null) {
+            if (verificaUsuarioExiste(sessionId)) {
+                return getUsuario(sessionId);
+            }
+
+            throw new SessionNotFoundException("Usuário não cadastrado.");
+        }
+
+        return getUsuario(login);
+    }
+
+    /**
+     * Cria um novo usuário no sistema.
+     */
+    public void criarUsuario(String login, String senha, String nome) {
+        if (login == null) {
+            throw new InvalidUserDataException("Login inválido.");
+        }
+        if (senha == null) {
+            throw new InvalidUserDataException("Senha inválida.");
+        }
+        if (verificaUsuarioExiste(login)) {
+            throw new InvalidUserDataException("Conta com esse nome já existe.");
+        }
+
+        usuarios.put(login, new Usuario(login, senha, nome));
+    }
+
+    /**
+     * Cria uma nova sessão para um usuário.
+     */
+    public String criarSessao(String login, String senha) {
+        if (!usuarios.containsKey(login)) {
+            throw new AuthenticationException();
+        }
+
+        Usuario usuario = usuarios.get(login);
+
+        if (!usuario.isPasswordValid(senha)) {
+            throw new AuthenticationException();
+        }
+
+        String sessionId = String.valueOf(nextSessionId++);
+        sessoes.put(sessionId, login);
+
+        return sessionId;
+    }
+
+    /**
      * Obtém o valor de um atributo de um usuário.
-     *
-     * @param login O login do usuário.
-     * @param atributo O nome do atributo.
-     * @return O valor do atributo.
-     * @throws UserNotFoundException Se o usuário não estiver cadastrado.
      */
     public String getAtributoUsuario(String login, String atributo) {
-        Usuario usuario = retornaUsuario(login);
-
+        Usuario usuario = getUsuario(login);
         switch (atributo) {
             case "nome":
                 return usuario.getNome();
@@ -73,169 +149,222 @@ public class Sistema implements Serializable {
     }
 
     /**
-     * Cria um novo usuário no sistema.
-     *
-     * @param login O login do usuário.
-     * @param senha A senha do usuário.
-     * @param nome O nome do usuário.
-     * @throws InvalidUserDataException Se o login ou a senha forem inválidos, ou se já existir um usuário com o mesmo login.
-     */
-    public void criarUsuario(String login, String senha, String nome) {
-        if (login == null) {
-            throw new InvalidUserDataException("Login inválido.");
-        }
-
-        if (senha == null) {
-            throw new InvalidUserDataException("Senha inválida.");
-        }
-
-        if (this.usuarios.containsKey(login)) {
-            throw new InvalidUserDataException("Conta com esse nome já existe.");
-        }
-
-        Usuario usuario = new Usuario(login, senha, nome);
-        this.usuarios.put(login, usuario);
-    }
-
-    /**
-     * Abre uma sessão para um usuário.
-     *
-     * @param login O login do usuário.
-     * @param senha A senha do usuário.
-     * @return O login do usuário.
-     * @throws AuthenticationException Se o login ou a senha forem inválidos.
-     */
-    public String abrirSessao(String login, String senha) {
-        if (!this.usuarios.containsKey(login)) {
-            throw new AuthenticationException();
-        }
-
-        Usuario usuario = this.usuarios.get(login);
-
-        if (!usuario.isPasswordValid(senha)) {
-            throw new AuthenticationException();
-        }
-
-        return login;
-    }
-
-    /**
      * Edita o perfil de um usuário.
-     *
-     * @param id O ID do usuário.
-     * @param atributo O nome do atributo a ser editado.
-     * @param valor O novo valor do atributo.
-     * @throws UserNotFoundException Se o usuário não estiver cadastrado.
      */
-    public void editarPerfil(String id, String atributo, String valor) {
-        Usuario usuario = retornaUsuario(id);
+    public void editarPerfil(String sessionId, String atributo, String valor) {
+        Usuario usuario = getUsuarioDaSessao(sessionId);
         usuario.setAtributo(atributo, valor);
     }
 
     /**
      * Verifica se dois usuários são amigos.
-     *
-     * @param login O login do usuário.
-     * @param amigo O login do amigo.
-     * @return true se os usuários são amigos, false caso contrário.
      */
-    public boolean ehAmigo(String login, String amigo) {
-        Usuario usuario = retornaUsuario(login);
+    public boolean ehAmigo(String sessionId, String amigo) {
+        Usuario usuario = getUsuarioDaSessao(sessionId);
         return usuario.getAmigos().contains(amigo);
     }
 
     /**
      * Adiciona um amigo para um usuário.
-     *
-     * @param login O login do usuário.
-     * @param amigo O login do amigo a ser adicionado.
-     * @throws FriendshipException Se o usuário tentar adicionar a si mesmo, ou se o convite já existir.
-     * @throws UserNotFoundException Se o usuário ou o amigo não estiverem cadastrados.
      */
-    public void adicionarAmigo(String login, String amigo) {
+    public void adicionarAmigo(String sessionId, String amigo) {
+        String login = getLoginDaSessao(sessionId);
+        if (login == null) {
+            throw new SessionNotFoundException("Usuário não cadastrado.");
+        }
+
         if (login.equals(amigo)) {
             throw new FriendshipException("Usuário não pode adicionar a si mesmo como amigo.");
         }
 
-        Usuario usuarioRecebeConvite = retornaUsuario(amigo);
-        Usuario usuarioEnviaConvite = retornaUsuario(login);
+        Usuario usuarioEnvia = getUsuario(login);
+        Usuario usuarioRecebe = getUsuario(amigo);
 
-        if (usuarioEnviaConvite.getConvitesAmizade().contains(amigo)) {
+        if (usuarioEnvia.getConvitesAmizade().contains(amigo)) {
             // Aceitar convite pendente (ambos já enviaram convites)
-            usuarioRecebeConvite.adicionarAmigo(login);
-            usuarioEnviaConvite.adicionarAmigo(amigo);
-
-            usuarioRecebeConvite.removerConviteAmizade(login);
-            usuarioEnviaConvite.removerConviteAmizade(amigo);
+            usuarioRecebe.adicionarAmigo(login);
+            usuarioEnvia.adicionarAmigo(amigo);
+            usuarioRecebe.removerConviteAmizade(login);
+            usuarioEnvia.removerConviteAmizade(amigo);
             return;
         }
 
-        if (usuarioRecebeConvite.getConvitesAmizade().contains(login)) {
+        if (usuarioRecebe.getConvitesAmizade().contains(login)) {
             throw new FriendshipException("Usuário já está adicionado como amigo, esperando aceitação do convite.");
         }
 
-        if (usuarioRecebeConvite.getAmigos().contains(login)) {
+        if (usuarioRecebe.getAmigos().contains(login)) {
             throw new FriendshipException("Usuário já está adicionado como amigo.");
         }
 
-        usuarioRecebeConvite.adicionarConviteAmizade(login);
+        usuarioRecebe.adicionarConviteAmizade(login);
     }
 
     /**
      * Obtém a lista de amigos de um usuário.
-     *
-     * @param login O login do usuário.
-     * @return Uma string contendo os logins dos amigos do usuário.
      */
-    public String getAmigos(String login) {
-        Usuario usuario = retornaUsuario(login);
-        String amigos = String.join(",", usuario.getAmigos());
-        return "{" + amigos + "}";
+    public String getAmigos(String sessionId) {
+        Usuario usuario = getUsuarioDaSessao(sessionId);
+        return usuario.getAmigosFormatado();
     }
 
     /**
      * Envia um recado para um usuário.
-     *
-     * @param id O ID do usuário que envia o recado.
-     * @param destinatario O ID do usuário que recebe o recado.
-     * @param recado O conteúdo do recado.
-     * @throws MessageException Se o usuário tentar enviar um recado para si mesmo.
-     * @throws UserNotFoundException Se o usuário ou o destinatário não estiverem cadastrados.
      */
-    public void enviarRecado(String id, String destinatario, String recado) {
-        if (id.equals(destinatario)) {
+    public void enviarRecado(String sessionId, String destinatario, String recado) {
+        String login = getLoginDaSessao(sessionId);
+        if (login == null) {
+            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+        }
+
+        if (login.equals(destinatario)) {
             throw new MessageException("Usuário não pode enviar recado para si mesmo.");
         }
 
-        Usuario enviaRecado = retornaUsuario(id);
-        Usuario recebeRecado = retornaUsuario(destinatario);
-
-        recebeRecado.adicionarRecado(recado);
+        Usuario recebeRecado = getUsuario(destinatario);
+        recebeRecado.adicionarRecado(login, recado);
     }
 
     /**
      * Lê um recado de um usuário.
-     *
-     * @param id O ID do usuário.
-     * @return O conteúdo do recado.
-     * @throws MessageException Se não houver recados.
      */
-    public String lerRecado(String id) {
-        Usuario usuario = retornaUsuario(id);
-
+    public String lerRecado(String sessionId) {
+        Usuario usuario = getUsuarioDaSessao(sessionId);
         if (usuario.getRecados().isEmpty()) {
             throw new MessageException("Não há recados.");
         }
 
-        return usuario.getRecados().poll();
+        Recado recado = usuario.getRecados().poll();
+        return recado.getConteudo();
     }
 
     /**
-     * Obtém o gerenciador de sessões.
-     *
-     * @return O objeto Sessao que gerencia as sessões.
+     * Cria uma nova comunidade no sistema.
      */
-    public Sessao getGerenciadorSessoes() {
-        return gerenciadorSessoes;
+    public void criarComunidade(String sessionId, String nome, String descricao) {
+        if (comunidades.containsKey(nome)) {
+            throw new CommunityException("Comunidade com esse nome já existe.");
+        }
+
+        String login = getLoginDaSessao(sessionId);
+        if (login == null) {
+            throw new SessionNotFoundException("Usuário não cadastrado.");
+        }
+
+        Comunidade comunidade = new Comunidade(sessionId, nome, descricao);
+        comunidade.addMembro(login);
+        comunidades.put(nome, comunidade);
+
+        this.usuarios.get(login).addComunidade(nome);
+    }
+
+    /**
+     * Obtém a descrição de uma comunidade.
+     */
+    public String getDescricaoComunidade(String nome) {
+        if (!comunidades.containsKey(nome)) {
+            throw new CommunityException("Comunidade não existe.");
+        }
+        return comunidades.get(nome).getDescricao();
+    }
+
+    /**
+     * Obtém o dono de uma comunidade.
+     */
+    public String getDonoComunidade(String nome) {
+        if (!comunidades.containsKey(nome)) {
+            throw new CommunityException("Comunidade não existe.");
+        }
+        return getLoginDaSessao(comunidades.get(nome).getSessionID());
+    }
+
+    /**
+     * Obtém os membros de uma comunidade.
+     */
+    public String getMembrosComunidade(String nome) {
+        if (!comunidades.containsKey(nome)) {
+            throw new CommunityException("Comunidade não existe.");
+        }
+        return comunidades.get(nome).getMembros();
+    }
+
+    /**
+     * Obtém as comunidades de um usuário.
+     */
+    public String getComunidades(String login) {
+        if (login == null || login.isEmpty() || !verificaUsuarioExiste(login)) {
+            throw new UserNotFoundException("Usuário não cadastrado.");
+        }
+        return usuarios.get(login).getComunidadesCadastradas();
+    }
+
+    /**
+     * Adiciona um usuário a uma comunidade.
+     */
+    public void adicionarComunidade(String sessionId, String comunidade) {
+        if (!existeSessao(sessionId)) {
+            throw new SessionNotFoundException("Usuário não cadastrado.");
+        }
+
+        String login = getLoginDaSessao(sessionId);
+
+        if (!comunidades.containsKey(comunidade)) {
+            throw new CommunityException("Comunidade não existe.");
+        }
+
+        String membros = comunidades.get(comunidade).getMembros();
+
+        if (membros.contains(login)) {
+            throw new CommunityException("Usuario já faz parte dessa comunidade.");
+        }
+
+        comunidades.get(comunidade).addMembro(login);
+        usuarios.get(login).addComunidade(comunidade);
+    }
+
+    /**
+     * Lê uma mensagem de um usuário.
+     */
+    public String lerMensagem(String sessionId) {
+        if (!existeSessao(sessionId)) {
+            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+        }
+
+        Usuario usuario = getUsuario(getLoginDaSessao(sessionId));
+
+        if (usuario.getMensagens().isEmpty()) {
+            throw new MessageException("Não há mensagens.");
+        }
+
+        return usuario.getMensagens().poll().toString();
+    }
+
+    /**
+     * Envia uma mensagem para uma comunidade.
+     */
+    public void enviarMensagem(String sessionId, String comunidade, String mensagem) {
+        if (!existeSessao(sessionId)) {
+            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+        }
+
+        if (!comunidades.containsKey(comunidade)) {
+            throw new CommunityException("Comunidade não existe.");
+        }
+
+        String login = getLoginDaSessao(sessionId);
+        Comunidade com = comunidades.get(comunidade);
+
+        if (!com.isMembro(login)) {
+            throw new CommunityException("Usuário não é membro desta comunidade.");
+        }
+
+        com.adicionarMensagem(login, mensagem);
+
+        Mensagem novaMensagem = new Mensagem(login, mensagem, comunidade);
+        for(Usuario usuario : usuarios.values()) {
+            if(usuario.getComunidadesCadastradas().contains(comunidade)) {
+                usuario.getMensagens().add(novaMensagem);
+            }
+        }
     }
 }

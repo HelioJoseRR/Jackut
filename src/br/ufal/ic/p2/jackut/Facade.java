@@ -1,3 +1,4 @@
+// Refactored Facade.java
 package br.ufal.ic.p2.jackut;
 
 import br.ufal.ic.p2.jackut.entities.*;
@@ -7,7 +8,6 @@ import java.io.*;
 
 /**
  * A classe Facade fornece uma interface simplificada para interagir com o sistema Jackut.
- * Implementa a interface Serializable para permitir a serialização dos objetos.
  */
 public class Facade implements Serializable {
     private Sistema sistema;
@@ -19,63 +19,46 @@ public class Facade implements Serializable {
      * Inicializa o sistema lendo os dados do arquivo "sistema.dat".
      */
     public Facade() {
-        this.sistema = new Sistema(); // Inicialização padrão
+        this.sistema = new Sistema();
         try {
-            this.readSistema();
-        } catch (SystemSaveException e) {
-            // Se houver erro ao ler o arquivo, inicia com um sistema novo
-            // e não propaga a exceção, já que temos um sistema válido mesmo sem arquivo
-            this.sistema = new Sistema();
+            File file = new File(SISTEMA_FILE);
+            if (file.exists()) {
+                ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
+                Sistema sistemaLido = (Sistema) in.readObject();
+                if (sistemaLido != null) {
+                    this.sistema = sistemaLido;
+                }
+                in.close();
+            }
+        } catch (Exception e) {
+            // Se houver erro ao ler o arquivo, continua com um sistema novo
         }
     }
 
     /**
      * Salva o estado atual do sistema no arquivo "sistema.dat".
      */
-    public void saveSistema() {
-        try (FileOutputStream fileOutputStream = new FileOutputStream(SISTEMA_FILE);
-             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream)) {
-
-            objectOutputStream.writeObject(this.sistema);
-
+    public void encerrarSistema() {
+        try {
+            FileOutputStream fileOut = new FileOutputStream(SISTEMA_FILE);
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(this.sistema);
+            out.close();
+            fileOut.close();
         } catch (IOException e) {
             throw new SystemSaveException("Erro ao salvar o sistema");
         }
     }
 
     /**
-     * Lê o estado do sistema a partir do arquivo "sistema.dat".
-     */
-    public void readSistema() {
-        File file = new File(SISTEMA_FILE);
-        if (!file.exists()) {
-            // Se o arquivo não existir, apenas mantém o sistema atual
-            return;
-        }
-
-        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(file))) {
-            Sistema sistemaLido = (Sistema) in.readObject();
-            if (sistemaLido != null) {
-                this.sistema = sistemaLido;
-            }
-        } catch (IOException | ClassNotFoundException e) {
-            throw new SystemSaveException("Erro ao ler o sistema");
-        }
-    }
-
-    /**
-     * Reseta o sistema, limpando as coleções de usuários e sessões.
+     * Reseta o sistema, limpando todas as coleções.
      */
     public void zerarSistema() {
-        this.sistema.zerarSistema();
+        this.sistema = new Sistema();
     }
 
     /**
      * Obtém o valor de um atributo de um usuário.
-     *
-     * @param login O login do usuário.
-     * @param atributo O nome do atributo.
-     * @return O valor do atributo.
      */
     public String getAtributoUsuario(String login, String atributo) {
         return sistema.getAtributoUsuario(login, atributo);
@@ -83,10 +66,6 @@ public class Facade implements Serializable {
 
     /**
      * Cria um novo usuário no sistema.
-     *
-     * @param login O login do usuário.
-     * @param senha A senha do usuário.
-     * @param nome O nome do usuário.
      */
     public void criarUsuario(String login, String senha, String nome) {
         sistema.criarUsuario(login, senha, nome);
@@ -94,170 +73,127 @@ public class Facade implements Serializable {
 
     /**
      * Abre uma sessão para um usuário.
-     *
-     * @param login O login do usuário.
-     * @param senha A senha do usuário.
-     * @return O ID da sessão criada.
      */
     public String abrirSessao(String login, String senha) {
-        String loginAutenticado = sistema.abrirSessao(login, senha);
-        return sistema.getGerenciadorSessoes().criarSessao(loginAutenticado);
+        return sistema.criarSessao(login, senha);
     }
 
     /**
      * Encerra uma sessão específica.
-     *
-     * @param sessionId O ID da sessão a ser encerrada.
-     * @return true se a sessão foi encerrada com sucesso, false caso contrário.
      */
     public boolean encerrarSessao(String sessionId) {
-        return sistema.getGerenciadorSessoes().encerrarSessao(sessionId);
+        return sistema.encerrarSessao(sessionId);
     }
 
     /**
      * Verifica se uma sessão existe.
-     *
-     * @param sessionId O ID da sessão.
-     * @return true se a sessão existir, false caso contrário.
      */
     public boolean existeSessao(String sessionId) {
-        return sistema.getGerenciadorSessoes().existeSessao(sessionId);
+        return sistema.existeSessao(sessionId);
     }
 
     /**
      * Obtém o login do usuário associado a uma sessão.
-     *
-     * @param sessionId O ID da sessão.
-     * @return O login do usuário associado à sessão, ou null se a sessão não existir.
      */
     public String getLoginDaSessao(String sessionId) {
-        return sistema.getGerenciadorSessoes().getLoginDaSessao(sessionId);
-    }
-
-    /**
-     * Salva o estado atual do sistema e encerra a aplicação.
-     */
-    public void encerrarSistema() {
-        this.saveSistema();
+        return sistema.getLoginDaSessao(sessionId);
     }
 
     /**
      * Edita o perfil de um usuário.
-     *
-     * @param sessionId O ID da sessão do usuário.
-     * @param atributo O nome do atributo a ser editado.
-     * @param valor O novo valor do atributo.
-     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
     public void editarPerfil(String sessionId, String atributo, String valor) {
-        String login = getLoginDaSessao(sessionId);
-        if (login == null) {
-            throw new SessionNotFoundException("Usuário não cadastrado.");
-        }
-        sistema.editarPerfil(login, atributo, valor);
+        sistema.editarPerfil(sessionId, atributo, valor);
     }
 
     /**
      * Verifica se dois usuários são amigos.
-     *
-     * @param sessionId O ID da sessão do usuário.
-     * @param amigo O login do amigo.
-     * @return true se os usuários são amigos, false caso contrário.
-     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
     public boolean ehAmigo(String sessionId, String amigo) {
-        String login = getLoginDaSessao(sessionId);
-
-        // Verifica se o sessionId é um login válido usando o método público
-        if (login == null && sistema.verificaUsuarioExiste(sessionId)) {
-            login = sessionId;
-        }
-        else if (login == null) {
-            throw new SessionNotFoundException("Sessão inválida ou expirada.");
-        }
-
-        return sistema.ehAmigo(login, amigo);
+        return sistema.ehAmigo(sessionId, amigo);
     }
 
     /**
      * Adiciona um amigo para um usuário.
-     *
-     * @param sessionId O ID da sessão do usuário.
-     * @param amigo O login do amigo a ser adicionado.
-     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
     public void adicionarAmigo(String sessionId, String amigo) {
-        String login = getLoginDaSessao(sessionId);
-        if (login == null) {
-            throw new SessionNotFoundException("Usuário não cadastrado.");
-        }
-        sistema.adicionarAmigo(login, amigo);
+        sistema.adicionarAmigo(sessionId, amigo);
     }
 
     /**
      * Obtém a lista de amigos de um usuário.
-     *
-     * @param sessionId O ID da sessão do usuário.
-     * @return Uma string contendo os logins dos amigos do usuário.
-     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
     public String getAmigos(String sessionId) {
-        String login = getLoginDaSessao(sessionId);
-
-        if (login == null && sistema.verificaUsuarioExiste(sessionId)) {
-            login = sessionId;
-        }
-        else if (login == null) {
-            throw new SessionNotFoundException("Sessão inválida ou expirada.");
-        }
-
-        return sistema.getAmigos(login);
+        return sistema.getAmigos(sessionId);
     }
 
     /**
      * Envia um recado para um usuário.
-     *
-     * @param sessionId O ID da sessão do usuário que envia o recado.
-     * @param destinatario O login do usuário que recebe o recado.
-     * @param recado O conteúdo do recado.
-     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
     public void enviarRecado(String sessionId, String destinatario, String recado) {
-        String login = getLoginDaSessao(sessionId);
-        if (login == null) {
-            throw new SessionNotFoundException("Sessão inválida ou expirada.");
-        }
-        sistema.enviarRecado(login, destinatario, recado);
+        sistema.enviarRecado(sessionId, destinatario, recado);
     }
 
     /**
      * Lê um recado de um usuário.
-     *
-     * @param sessionId O ID da sessão do usuário.
-     * @return O conteúdo do recado.
-     * @throws SessionNotFoundException Se a sessão não for encontrada.
      */
     public String lerRecado(String sessionId) {
-        String login = getLoginDaSessao(sessionId);
-        if (login == null) {
-            throw new SessionNotFoundException("Sessão inválida ou expirada.");
-        }
-        return sistema.lerRecado(login);
+        return sistema.lerRecado(sessionId);
     }
 
-    public void criarComunidade(String sessionID, String nome, String descricao){
-        this.sistema.getGerenciadorSessoes().criarComunidade(sessionID, nome, descricao);
+    /**
+     * Cria uma nova comunidade.
+     */
+    public void criarComunidade(String sessionId, String nome, String descricao) {
+        sistema.criarComunidade(sessionId, nome, descricao);
     }
 
-    public String getDescricaoComunidade(String nome){
-        return this.sistema.getGerenciadorSessoes().getDescricaoComunidade(nome);
+    /**
+     * Obtém a descrição de uma comunidade.
+     */
+    public String getDescricaoComunidade(String nome) {
+        return sistema.getDescricaoComunidade(nome);
     }
 
-    public String getDonoComunidade(String nome){
-        return this.sistema.getGerenciadorSessoes().getDonoComunidade(nome);
+    /**
+     * Obtém o dono de uma comunidade.
+     */
+    public String getDonoComunidade(String nome) {
+        return sistema.getDonoComunidade(nome);
     }
 
-    public String getMembrosComunidade(String nome){
-        return this.sistema.getGerenciadorSessoes().getMembrosComunidade(nome);
+    /**
+     * Obtém os membros de uma comunidade.
+     */
+    public String getMembrosComunidade(String nome) {
+        return sistema.getMembrosComunidade(nome);
+    }
+
+    /**
+     * Obtém as comunidades de um usuário.
+     */
+    public String getComunidades(String login) {
+        return sistema.getComunidades(login);
+    }
+
+    /**
+     * Adiciona um usuário a uma comunidade.
+     */
+    public void adicionarComunidade(String sessionId, String nome) {
+        sistema.adicionarComunidade(sessionId, nome);
+    }
+
+    /**
+     * Lê uma mensagem de um usuário.
+     */
+    public String lerMensagem(String sessionId) {
+        return sistema.lerMensagem(sessionId);
+    }
+
+    /**
+     * Envia uma mensagem para uma comunidade.
+     */
+    public void enviarMensagem(String sessionId, String comunidade, String mensagem) {
+        sistema.enviarMensagem(sessionId, comunidade, mensagem);
     }
 }
