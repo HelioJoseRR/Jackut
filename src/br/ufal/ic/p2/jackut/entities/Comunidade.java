@@ -14,7 +14,6 @@ public class Comunidade implements Serializable {
     private String nome;
     private String descricao;
     private Vector<String> membros;
-    private Queue<Mensagem> mensagens;
     private static final long serialVersionUID = 1L;
 
     /**
@@ -25,7 +24,6 @@ public class Comunidade implements Serializable {
         this.nome = nome;
         this.descricao = descricao;
         this.membros = new Vector<>();
-        this.mensagens = new LinkedList<>();
     }
 
     /**
@@ -73,30 +71,6 @@ public class Comunidade implements Serializable {
      */
     public String getMembros() {
         return membros.stream().collect(Collectors.joining(",", "{", "}"));
-    }
-
-    /**
-     * Obtém e remove a primeira mensagem da fila.
-     */
-    public Mensagem getFirstMensagem() {
-        return this.mensagens.poll();
-    }
-
-    /**
-     * Obtém todas as mensagens da comunidade.
-     */
-    public Queue<Mensagem> getMensagens() {
-        return this.mensagens;
-    }
-
-    /**
-     * Adiciona uma mensagem à comunidade.
-     *
-     * @param remetente O login do usuário que enviou a mensagem
-     * @param conteudo O conteúdo da mensagem
-     */
-    public void adicionarMensagem(String remetente, String conteudo) {
-        this.mensagens.add(new Mensagem(remetente, conteudo, this.nome));
     }
 
 

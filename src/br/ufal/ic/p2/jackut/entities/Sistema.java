@@ -296,6 +296,7 @@ public class Sistema implements Serializable {
         if (login == null || login.isEmpty() || !verificaUsuarioExiste(login)) {
             throw new UserNotFoundException("Usuário não cadastrado.");
         }
+
         return usuarios.get(login).getComunidadesCadastradas();
     }
 
@@ -355,11 +356,9 @@ public class Sistema implements Serializable {
         }
 
         String login = getLoginDaSessao(sessionId);
-        Comunidade com = comunidades.get(comunidade);
-
-        com.adicionarMensagem(login, mensagem);
 
         Mensagem novaMensagem = new Mensagem(login, mensagem, comunidade);
+        
         for(Usuario usuario : usuarios.values()) {
             if(usuario.getComunidadesCadastradas().contains(comunidade)) {
                 usuario.adicionarMensagem(novaMensagem);
