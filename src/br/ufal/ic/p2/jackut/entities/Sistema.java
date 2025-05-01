@@ -5,6 +5,7 @@ import br.ufal.ic.p2.jackut.exceptions.*;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 /**
  * A classe Sistema representa o sistema principal do Jackut.
@@ -312,14 +313,16 @@ public class Sistema implements Serializable {
             throw new CommunityException("Comunidade não existe.");
         }
 
-        String membros = comunidades.get(comunidade).getMembros();
+        Comunidade comunidadeObj = comunidades.get(comunidade);
 
-        if (membros.contains(login)) {
+        if (comunidadeObj.isMembro(login)) {
             throw new CommunityException("Usuario já faz parte dessa comunidade.");
         }
 
-        comunidades.get(comunidade).addMembro(login);
-        usuarios.get(login).addComunidade(comunidade);
+        Usuario usuario = usuarios.get(login);
+
+        comunidadeObj.addMembro(login);
+        usuario.addComunidade(comunidade);
     }
 
     /**
@@ -344,7 +347,7 @@ public class Sistema implements Serializable {
      */
     public void enviarMensagem(String sessionId, String comunidade, String mensagem) {
         if (!existeSessao(sessionId)) {
-            throw new SessionNotFoundException("Sessão inválida ou expirada.");
+            throw new SessionNotFoundException("Usuário não cadastrado.");
         }
 
         if (!comunidades.containsKey(comunidade)) {
@@ -354,16 +357,12 @@ public class Sistema implements Serializable {
         String login = getLoginDaSessao(sessionId);
         Comunidade com = comunidades.get(comunidade);
 
-        if (!com.isMembro(login)) {
-            throw new CommunityException("Usuário não é membro desta comunidade.");
-        }
-
         com.adicionarMensagem(login, mensagem);
 
         Mensagem novaMensagem = new Mensagem(login, mensagem, comunidade);
         for(Usuario usuario : usuarios.values()) {
             if(usuario.getComunidadesCadastradas().contains(comunidade)) {
-                usuario.getMensagens().add(novaMensagem);
+                usuario.adicionarMensagem(novaMensagem);
             }
         }
     }

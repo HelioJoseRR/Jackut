@@ -98,4 +98,6 @@ public class Comunidade implements Serializable {
     public void adicionarMensagem(String remetente, String conteudo) {
         this.mensagens.add(new Mensagem(remetente, conteudo, this.nome));
     }
+
+
 }
