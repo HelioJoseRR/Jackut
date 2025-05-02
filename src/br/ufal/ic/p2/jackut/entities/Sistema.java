@@ -468,4 +468,46 @@ public class Sistema implements Serializable {
 
         usuario.adicionarInimigo(inimigo);
     }
+
+    public void removerUsuario(String sessionId){
+        String login = getLoginDaSessao(sessionId);
+        Usuario removido = usuarios.remove(login);
+        String sessaoRemovida = sessoes.remove(sessionId);
+
+        if (sessaoRemovida == null || removido == null) {
+            throw new UserNotFoundException("Usuário não cadastrado.");
+        }
+
+        Iterator<Map.Entry<String, Comunidade>> iter = comunidades.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry<String, Comunidade> entry = iter.next();
+            String nomeComunidade = entry.getKey();
+            Comunidade com = entry.getValue();
+
+            // Supondo que Comunidade.getDono() retorna o login do dono
+            if (com.getDono().equals(login)) {
+                // Remove a comunidade de todos os membros
+                for (String membro : com.getMembrosList()) {
+                    Usuario u = usuarios.get(membro);
+                    if (u != null) {
+                        u.removerComunidade(nomeComunidade);
+                    }
+                }
+                // Remove a comunidade do sistema
+                iter.remove();
+            }
+        }
+
+        // Remove recados enviados por esse usuário dos outros usuários
+        for (Usuario u : usuarios.values()) {
+            Queue<Recado> recadosFiltrados = new LinkedList<>();
+            for (Recado r : u.getRecados()) {
+                if (!r.getRemetente().equals(login)) {
+                    recadosFiltrados.add(r);
+                }
+            }
+
+            u.setRecados(recadosFiltrados);
+        }
+    }
 }

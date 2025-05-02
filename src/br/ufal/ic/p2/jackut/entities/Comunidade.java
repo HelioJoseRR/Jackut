@@ -14,6 +14,7 @@ public class Comunidade implements Serializable {
     private String sessionID;
     private String nome;
     private String descricao;
+    private String dono;
     private Vector<String> membros;
     @Serial
     private static final long serialVersionUID = 1L;
@@ -26,6 +27,7 @@ public class Comunidade implements Serializable {
         this.nome = nome;
         this.descricao = descricao;
         this.membros = new Vector<>();
+        this.dono = "";
     }
 
     /**
@@ -54,6 +56,10 @@ public class Comunidade implements Serializable {
      */
     public void addMembro(String nome) {
         if (!membros.contains(nome)) {
+            if(membros.isEmpty()){
+                dono = nome;
+            }
+
             membros.add(nome);
         }
     }
@@ -75,5 +81,12 @@ public class Comunidade implements Serializable {
         return membros.stream().collect(Collectors.joining(",", "{", "}"));
     }
 
+    public Vector<String> getMembrosList() {
+        return membros;
+    }
+
+    public String getDono() {
+        return dono;
+    }
 
 }

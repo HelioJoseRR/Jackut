@@ -224,4 +224,8 @@ public class Facade implements Serializable {
     public void adicionarInimigo(String sessionId, String inimigo) {
         this.sistema.adicionarInimigo(sessionId, inimigo);
     }
+
+    public void removerUsuario(String sessionId) {
+        this.sistema.removerUsuario(sessionId);
+    }
 }

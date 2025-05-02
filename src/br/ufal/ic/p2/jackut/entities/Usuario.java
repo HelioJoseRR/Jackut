@@ -194,4 +194,12 @@ public class Usuario implements Serializable {
     public boolean ehInimigo(String inimigo){
         return this.relacionamentos.getInimigos().contains(inimigo);
     }
+
+    public void removerComunidade(String comunidade) {
+        this.comunidadesCadastradas.remove(comunidade);
+    }
+
+    public void setRecados(Queue<Recado> recados) {
+        this.recados = recados;
+    }
 }
