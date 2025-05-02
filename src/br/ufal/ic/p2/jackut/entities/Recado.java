@@ -1,5 +1,6 @@
 package br.ufal.ic.p2.jackut.entities;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -10,7 +11,7 @@ public class Recado implements Serializable {
     private String remetente;
     private String destinatario;
     private String conteudo;
-    private LocalDateTime dataHora;
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -24,7 +25,6 @@ public class Recado implements Serializable {
         this.remetente = remetente;
         this.destinatario = destinatario;
         this.conteudo = conteudo;
-        this.dataHora = LocalDateTime.now();
     }
 
     /**
@@ -52,15 +52,6 @@ public class Recado implements Serializable {
      */
     public String getConteudo() {
         return conteudo;
-    }
-
-    /**
-     * Obtém a data e hora em que o recado foi enviado.
-     *
-     * @return A data e hora do envio
-     */
-    public LocalDateTime getDataHora() {
-        return dataHora;
     }
 
     /**

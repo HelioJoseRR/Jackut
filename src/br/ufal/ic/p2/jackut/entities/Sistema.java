@@ -2,10 +2,9 @@ package br.ufal.ic.p2.jackut.entities;
 
 import br.ufal.ic.p2.jackut.exceptions.*;
 
+import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * A classe Sistema representa o sistema principal do Jackut.
@@ -15,6 +14,7 @@ public class Sistema implements Serializable {
     private Map<String, Comunidade> comunidades;
     private Map<String, String> sessoes; // Map de sessionId para login
     private int nextSessionId;
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -47,7 +47,7 @@ public class Sistema implements Serializable {
     /**
      * Retorna um usuário pelo login.
      */
-    private Usuario getUsuario(String login) {
+    private Usuario getUsuarioPeloLogin(String login) {
         if (!verificaUsuarioExiste(login)) {
             throw new UserNotFoundException("Usuário não cadastrado.");
         }
@@ -88,13 +88,13 @@ public class Sistema implements Serializable {
 
         if (login == null) {
             if (verificaUsuarioExiste(sessionId)) {
-                return getUsuario(sessionId);
+                return getUsuarioPeloLogin(sessionId);
             }
 
             throw new SessionNotFoundException("Usuário não cadastrado.");
         }
 
-        return getUsuario(login);
+        return getUsuarioPeloLogin(login);
     }
 
     /**
@@ -138,7 +138,7 @@ public class Sistema implements Serializable {
      * Obtém o valor de um atributo de um usuário.
      */
     public String getAtributoUsuario(String login, String atributo) {
-        Usuario usuario = getUsuario(login);
+        Usuario usuario = getUsuarioPeloLogin(login);
         switch (atributo) {
             case "nome":
                 return usuario.getNome();
@@ -178,8 +178,8 @@ public class Sistema implements Serializable {
             throw new FriendshipException("Usuário não pode adicionar a si mesmo como amigo.");
         }
 
-        Usuario usuarioEnvia = getUsuario(login);
-        Usuario usuarioRecebe = getUsuario(amigo);
+        Usuario usuarioEnvia = getUsuarioPeloLogin(login);
+        Usuario usuarioRecebe = getUsuarioPeloLogin(amigo);
 
         if (usuarioEnvia.getConvitesAmizade().contains(amigo)) {
             // Aceitar convite pendente (ambos já enviaram convites)
@@ -214,6 +214,7 @@ public class Sistema implements Serializable {
      */
     public void enviarRecado(String sessionId, String destinatario, String recado) {
         String login = getLoginDaSessao(sessionId);
+
         if (login == null) {
             throw new SessionNotFoundException("Sessão inválida ou expirada.");
         }
@@ -222,7 +223,7 @@ public class Sistema implements Serializable {
             throw new MessageException("Usuário não pode enviar recado para si mesmo.");
         }
 
-        Usuario recebeRecado = getUsuario(destinatario);
+        Usuario recebeRecado = getUsuarioPeloLogin(destinatario);
         recebeRecado.adicionarRecado(login, recado);
     }
 
@@ -231,11 +232,13 @@ public class Sistema implements Serializable {
      */
     public String lerRecado(String sessionId) {
         Usuario usuario = getUsuarioDaSessao(sessionId);
+
         if (usuario.getRecados().isEmpty()) {
             throw new MessageException("Não há recados.");
         }
 
         Recado recado = usuario.getRecados().poll();
+
         return recado.getConteudo();
     }
 
@@ -334,7 +337,7 @@ public class Sistema implements Serializable {
             throw new SessionNotFoundException("Sessão inválida ou expirada.");
         }
 
-        Usuario usuario = getUsuario(getLoginDaSessao(sessionId));
+        Usuario usuario = getUsuarioPeloLogin(getLoginDaSessao(sessionId));
 
         if (usuario.getMensagens().isEmpty()) {
             throw new MessageException("Não há mensagens.");
@@ -364,5 +367,80 @@ public class Sistema implements Serializable {
                 usuario.adicionarMensagem(novaMensagem);
             }
         }
+    }
+
+    public boolean ehFa(String login, String idolo){
+        Usuario usuario = getUsuarioPeloLogin(login);
+
+        return usuario.getIdolos().contains(idolo);
+    }
+
+    public void adicionarIdolo(String id, String idolo){
+        Usuario usuario = this.getUsuarioDaSessao(id);
+
+        if (usuario == null || !this.sessoes.containsValue(idolo)) {
+            throw new UserNotFoundException("Usuário não cadastrado.");
+        }
+
+        if (this.getUsuarioDaSessao(id).getLogin().equals(idolo)) {
+            throw new RelacionamentoException("Usuário não pode ser fã de si mesmo.");
+        }
+
+        if (usuario.getIdolos().contains(idolo)) {
+            throw new RelacionamentoException("Usuário já está adicionado como ídolo.");
+        }
+
+        usuario.getIdolos().add(idolo);
+
+        return;
+    }
+
+    public String getFas(String login) {
+        List<String> fasList = new ArrayList<>();
+
+        for (Usuario usuario : usuarios.values()) {
+            if (!usuario.getLogin().equals(login) && usuario.getIdolos().contains(login)) {
+                fasList.add(usuario.getLogin());
+            }
+        }
+
+        return "{" + String.join(",", fasList) + "}";
+    }
+
+    public boolean ehPaquera(String sessionId, String paquera){
+        Usuario usuario = getUsuarioDaSessao(sessionId);
+        return usuario.ehPaquera(paquera);
+    }
+
+    public void adicionarRecadoJackut(String login, String recado){
+        this.usuarios.get(login).adicionarRecado("jackut", recado + " é seu paquera - Recado do Jackut.");
+    }
+
+    public void adicionarPaquera(String sessionId, String paquera){
+        Usuario usuario = getUsuarioDaSessao(sessionId);
+        Usuario paqueraObj = getUsuarioDaSessao(paquera);
+
+        if(usuario.getPaqueras().contains(paquera)){
+            throw new RelacionamentoException("Usuário já está adicionado como paquera.");
+        }
+
+        if(usuario.getLogin().equals(paquera)){
+            throw new RelacionamentoException("Usuário não pode ser paquera de si mesmo.");
+        }
+
+        usuario.adicionarPaquera(paquera);
+
+        if (usuario.getPaqueras().contains(paquera) && paqueraObj.getPaqueras().contains(usuario.getLogin())) {
+            adicionarRecadoJackut(usuario.getLogin(), paqueraObj.getNome());
+            adicionarRecadoJackut(paqueraObj.getLogin(), usuario.getNome());
+        }
+
+        return;
+    }
+
+    public String getPaqueras(String sessionId){
+        Usuario usuario = getUsuarioDaSessao(sessionId);
+
+        return usuario.getPaqueras();
     }
 }

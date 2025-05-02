@@ -5,6 +5,7 @@ import br.ufal.ic.p2.jackut.entities.*;
 import br.ufal.ic.p2.jackut.exceptions.*;
 
 import java.io.*;
+import java.util.Set;
 
 /**
  * A classe Facade fornece uma interface simplificada para interagir com o sistema Jackut.
@@ -195,5 +196,29 @@ public class Facade implements Serializable {
      */
     public void enviarMensagem(String sessionId, String comunidade, String mensagem) {
         sistema.enviarMensagem(sessionId, comunidade, mensagem);
+    }
+
+    public boolean ehFa(String login, String idolo){
+        return sistema.ehFa(login, idolo);
+    }
+
+    public void adicionarIdolo(String sessionId, String idolo) {
+        sistema.adicionarIdolo(sessionId, idolo);
+    }
+
+    public String getFas(String login) {
+        return sistema.getFas(login);
+    }
+
+    public boolean ehPaquera(String sessionId, String paquera) {
+        return sistema.ehPaquera(sessionId, paquera);
+    }
+
+    public void adicionarPaquera(String sessionId, String paquera) {
+        sistema.adicionarPaquera(sessionId, paquera);
+    }
+
+    public String getPaqueras(String id) {
+        return this.sistema.getPaqueras(id);
     }
 }

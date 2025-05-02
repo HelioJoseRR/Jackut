@@ -2,6 +2,7 @@ package br.ufal.ic.p2.jackut.entities;
 
 import br.ufal.ic.p2.jackut.exceptions.ProfileAttributeException;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,10 +16,11 @@ public class Usuario implements Serializable {
     private String nome;
     private Map<String, String> atributos;
     private Set<String> convitesAmizade;
-    private Set<String> amigos;
     private Queue<Recado> recados;
     private List<String> comunidadesCadastradas;
     private Queue<Mensagem> mensagens;
+    private Map<String, Set<String>> relacionamentos;
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -29,11 +31,11 @@ public class Usuario implements Serializable {
         this.senha = senha;
         this.nome = nome;
         this.atributos = new HashMap<>();
-        this.amigos = new LinkedHashSet<>();
         this.convitesAmizade = new LinkedHashSet<>();
         this.recados = new LinkedList<>();
         this.comunidadesCadastradas = new ArrayList<>();
         this.mensagens = new LinkedList<>();
+        this.relacionamentos = new HashMap<>();
     }
 
     /**
@@ -99,21 +101,24 @@ public class Usuario implements Serializable {
      * Obtém a lista de amigos do usuário.
      */
     public Set<String> getAmigos() {
-        return amigos;
+        this.relacionamentos.computeIfAbsent("amigo", k -> new LinkedHashSet<>());
+        return this.relacionamentos.get("amigo");
     }
 
     /**
      * Adiciona um amigo ao usuário.
      */
     public void adicionarAmigo(String amigo) {
-        this.amigos.add(amigo);
+        this.relacionamentos.computeIfAbsent("amigo", k -> new LinkedHashSet<>());
+
+        this.relacionamentos.get("amigo").add(amigo);
     }
 
     /**
      * Formata a lista de amigos para exibição.
      */
     public String getAmigosFormatado() {
-        String amigosStr = String.join(",", amigos);
+        String amigosStr = String.join(",", this.relacionamentos.get("amigo"));
         return "{" + amigosStr + "}";
     }
 
@@ -124,7 +129,8 @@ public class Usuario implements Serializable {
      * @param conteudo O conteúdo do recado
      */
     public void adicionarRecado(String remetente, String conteudo) {
-        recados.add(new Recado(remetente, this.login, conteudo));
+        Recado recado = new Recado(remetente, this.login, conteudo);
+        recados.add(recado);
     }
 
     /**
@@ -163,5 +169,34 @@ public class Usuario implements Serializable {
      */
     public void adicionarMensagem(Mensagem mensagem) {
         this.mensagens.add(mensagem);
+    }
+
+    public Set<String> getIdolos() {
+        this.relacionamentos.computeIfAbsent("fa", k -> new LinkedHashSet<>());
+
+        return this.relacionamentos.get("fa");
+    }
+
+    public void adicionarIdolo(String idolo){
+        this.relacionamentos.computeIfAbsent("fa", k -> new LinkedHashSet<>());
+
+        this.relacionamentos.get("fa").add(idolo);
+    }
+
+    public boolean ehPaquera(String paquera){
+        this.relacionamentos.computeIfAbsent("paquera", k -> new LinkedHashSet<>());
+
+        return this.relacionamentos.get("paquera").contains(paquera);
+    }
+
+    public void adicionarPaquera(String paquera){
+        this.relacionamentos.computeIfAbsent("paquera", k -> new LinkedHashSet<>());
+        this.relacionamentos.get("paquera").add(paquera);
+    }
+
+    public String getPaqueras() {
+        this.relacionamentos.computeIfAbsent("paquera", k -> new LinkedHashSet<>());
+        String paquerasStr = String.join(",", this.relacionamentos.get("paquera"));
+        return "{" + paquerasStr + "}";
     }
 }

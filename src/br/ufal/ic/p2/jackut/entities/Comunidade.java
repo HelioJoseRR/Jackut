@@ -1,5 +1,6 @@
 package br.ufal.ic.p2.jackut.entities;
 
+import java.io.Serial;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Vector;
@@ -14,6 +15,7 @@ public class Comunidade implements Serializable {
     private String nome;
     private String descricao;
     private Vector<String> membros;
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

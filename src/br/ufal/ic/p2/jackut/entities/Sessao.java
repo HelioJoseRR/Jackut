@@ -2,6 +2,7 @@ package br.ufal.ic.p2.jackut.entities;
 
 import br.ufal.ic.p2.jackut.exceptions.CommunityException;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 public class Sessao implements Serializable {
     private Map<String, String> sessoes;
     private int nextSessionId;
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

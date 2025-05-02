@@ -1,5 +1,6 @@
 package br.ufal.ic.p2.jackut.entities;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -10,6 +11,7 @@ public class Mensagem implements Serializable {
     private String remetente;
     private String conteudo;
     private String comunidade;
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
