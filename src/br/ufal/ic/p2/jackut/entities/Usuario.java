@@ -1,6 +1,7 @@
 package br.ufal.ic.p2.jackut.entities;
 
 import br.ufal.ic.p2.jackut.exceptions.ProfileAttributeException;
+import br.ufal.ic.p2.jackut.exceptions.RelacionamentoException;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -15,11 +16,10 @@ public class Usuario implements Serializable {
     private String senha;
     private String nome;
     private Map<String, String> atributos;
-    private Set<String> convitesAmizade;
     private Queue<Recado> recados;
     private List<String> comunidadesCadastradas;
     private Queue<Mensagem> mensagens;
-    private Map<String, Set<String>> relacionamentos;
+    private Relacionamento relacionamentos;
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -31,11 +31,10 @@ public class Usuario implements Serializable {
         this.senha = senha;
         this.nome = nome;
         this.atributos = new HashMap<>();
-        this.convitesAmizade = new LinkedHashSet<>();
         this.recados = new LinkedList<>();
         this.comunidadesCadastradas = new ArrayList<>();
         this.mensagens = new LinkedList<>();
-        this.relacionamentos = new HashMap<>();
+        this.relacionamentos = new Relacionamento();
     }
 
     /**
@@ -80,46 +79,35 @@ public class Usuario implements Serializable {
      * Obtém os convites de amizade do usuário.
      */
     public Set<String> getConvitesAmizade() {
-        return convitesAmizade;
+        return relacionamentos.getConvitesAmizade();
     }
 
     /**
      * Adiciona um convite de amizade.
      */
     public void adicionarConviteAmizade(String id) {
-        this.convitesAmizade.add(id);
+        this.relacionamentos.adicionarConviteAmizade(id);
     }
 
     /**
      * Remove um convite de amizade.
      */
     public void removerConviteAmizade(String id) {
-        this.convitesAmizade.remove(id);
+        this.relacionamentos.removerConviteAmizade(id);
     }
 
     /**
      * Obtém a lista de amigos do usuário.
      */
     public Set<String> getAmigos() {
-        this.relacionamentos.computeIfAbsent("amigo", k -> new LinkedHashSet<>());
-        return this.relacionamentos.get("amigo");
+        return relacionamentos.getAmigos();
     }
 
     /**
      * Adiciona um amigo ao usuário.
      */
     public void adicionarAmigo(String amigo) {
-        this.relacionamentos.computeIfAbsent("amigo", k -> new LinkedHashSet<>());
-
-        this.relacionamentos.get("amigo").add(amigo);
-    }
-
-    /**
-     * Formata a lista de amigos para exibição.
-     */
-    public String getAmigosFormatado() {
-        String amigosStr = String.join(",", this.relacionamentos.get("amigo"));
-        return "{" + amigosStr + "}";
+        this.relacionamentos.adicionarAmigo(amigo);
     }
 
     /**
@@ -172,31 +160,38 @@ public class Usuario implements Serializable {
     }
 
     public Set<String> getIdolos() {
-        this.relacionamentos.computeIfAbsent("fa", k -> new LinkedHashSet<>());
-
-        return this.relacionamentos.get("fa");
+        return this.relacionamentos.getIdolos();
     }
 
     public void adicionarIdolo(String idolo){
-        this.relacionamentos.computeIfAbsent("fa", k -> new LinkedHashSet<>());
-
-        this.relacionamentos.get("fa").add(idolo);
+        this.relacionamentos.adicionarIdolo(idolo);
     }
 
     public boolean ehPaquera(String paquera){
-        this.relacionamentos.computeIfAbsent("paquera", k -> new LinkedHashSet<>());
-
-        return this.relacionamentos.get("paquera").contains(paquera);
+        return this.relacionamentos.ehPaquera(paquera);
     }
 
     public void adicionarPaquera(String paquera){
-        this.relacionamentos.computeIfAbsent("paquera", k -> new LinkedHashSet<>());
-        this.relacionamentos.get("paquera").add(paquera);
+        this.relacionamentos.adicionarPaquera(paquera);
     }
 
     public String getPaqueras() {
-        this.relacionamentos.computeIfAbsent("paquera", k -> new LinkedHashSet<>());
-        String paquerasStr = String.join(",", this.relacionamentos.get("paquera"));
-        return "{" + paquerasStr + "}";
+        return this.relacionamentos.getPaqueras();
+    }
+
+    public Relacionamento getRelacionamento() {
+        return this.relacionamentos;
+    }
+
+    public void adicionarInimigo(String inimigo){
+        if (this.login.equals(inimigo)) {
+            throw new RelacionamentoException("Usuário não pode ser inimigo de si mesmo.");
+        }
+
+        this.relacionamentos.adicionarInimigo(inimigo);
+    }
+
+    public boolean ehInimigo(String inimigo){
+        return this.relacionamentos.getInimigos().contains(inimigo);
     }
 }

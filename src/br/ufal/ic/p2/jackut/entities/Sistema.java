@@ -181,6 +181,10 @@ public class Sistema implements Serializable {
         Usuario usuarioEnvia = getUsuarioPeloLogin(login);
         Usuario usuarioRecebe = getUsuarioPeloLogin(amigo);
 
+        if(usuarioRecebe.ehInimigo(usuarioEnvia.getLogin())){
+            throw new RelacionamentoException("Função inválida: " + usuarioRecebe.getNome() + " é seu inimigo.");
+        }
+
         if (usuarioEnvia.getConvitesAmizade().contains(amigo)) {
             // Aceitar convite pendente (ambos já enviaram convites)
             usuarioRecebe.adicionarAmigo(login);
@@ -206,25 +210,29 @@ public class Sistema implements Serializable {
      */
     public String getAmigos(String sessionId) {
         Usuario usuario = getUsuarioDaSessao(sessionId);
-        return usuario.getAmigosFormatado();
+        return usuario.getRelacionamento().getAmigosFormatado();
     }
 
     /**
      * Envia um recado para um usuário.
      */
     public void enviarRecado(String sessionId, String destinatario, String recado) {
-        String login = getLoginDaSessao(sessionId);
+        Usuario remetente = getUsuarioDaSessao(sessionId);
+        Usuario dest = getUsuarioPeloLogin(destinatario);
 
-        if (login == null) {
+        if (remetente.getLogin() == null) {
             throw new SessionNotFoundException("Sessão inválida ou expirada.");
         }
 
-        if (login.equals(destinatario)) {
+        if (remetente.getLogin().equals(destinatario)) {
             throw new MessageException("Usuário não pode enviar recado para si mesmo.");
         }
 
-        Usuario recebeRecado = getUsuarioPeloLogin(destinatario);
-        recebeRecado.adicionarRecado(login, recado);
+        if (dest.ehInimigo(remetente.getLogin())) {
+            throw new RelacionamentoException("Função inválida: " + dest.getNome() + " é seu inimigo.");
+        }
+
+        dest.adicionarRecado(remetente.getLogin(), recado);
     }
 
     /**
@@ -377,10 +385,9 @@ public class Sistema implements Serializable {
 
     public void adicionarIdolo(String id, String idolo){
         Usuario usuario = this.getUsuarioDaSessao(id);
+        Usuario idoloObj = getUsuarioPeloLogin(idolo);
 
-        if (usuario == null || !this.sessoes.containsValue(idolo)) {
-            throw new UserNotFoundException("Usuário não cadastrado.");
-        }
+
 
         if (this.getUsuarioDaSessao(id).getLogin().equals(idolo)) {
             throw new RelacionamentoException("Usuário não pode ser fã de si mesmo.");
@@ -388,6 +395,10 @@ public class Sistema implements Serializable {
 
         if (usuario.getIdolos().contains(idolo)) {
             throw new RelacionamentoException("Usuário já está adicionado como ídolo.");
+        }
+
+        if(idoloObj.ehInimigo(usuario.getLogin())) {
+            throw new RelacionamentoException("Função inválida: " + idoloObj.getNome() + " é seu inimigo.");
         }
 
         usuario.getIdolos().add(idolo);
@@ -428,6 +439,10 @@ public class Sistema implements Serializable {
             throw new RelacionamentoException("Usuário não pode ser paquera de si mesmo.");
         }
 
+        if (paqueraObj.ehInimigo(usuario.getLogin())) {
+            throw new RelacionamentoException("Função inválida: " + paqueraObj.getNome() + " é seu inimigo.");
+        }
+
         usuario.adicionarPaquera(paquera);
 
         if (usuario.getPaqueras().contains(paquera) && paqueraObj.getPaqueras().contains(usuario.getLogin())) {
@@ -442,5 +457,15 @@ public class Sistema implements Serializable {
         Usuario usuario = getUsuarioDaSessao(sessionId);
 
         return usuario.getPaqueras();
+    }
+
+    public void adicionarInimigo(String sessionId, String inimigo){
+        Usuario usuario = getUsuarioDaSessao(sessionId);
+
+        if(!this.usuarios.containsKey(inimigo) || !this.sessoes.containsKey(sessionId)){
+            throw new UserNotFoundException("Usuário não cadastrado.");
+        }
+
+        usuario.adicionarInimigo(inimigo);
     }
 }
