@@ -2,24 +2,31 @@ package br.ufal.ic.p2.jackut.entities;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 /**
- * A classe Mensagem representa uma mensagem enviada em uma comunidade no sistema Jackut.
+ * Representa uma mensagem enviada em uma comunidade no sistema Jackut.
+ * Uma mensagem possui um remetente, conteúdo e está associada a uma comunidade.
  */
 public class Mensagem implements Serializable {
-    private String remetente;
-    private String conteudo;
-    private String comunidade;
+    /** ID de serialização da classe */
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** Login do remetente da mensagem */
+    private final String remetente;
+
+    /** Conteúdo da mensagem */
+    private final String conteudo;
+
+    /** Nome da comunidade onde a mensagem foi enviada */
+    private final String comunidade;
+
     /**
-     * Construtor da classe Mensagem.
+     * Cria uma nova mensagem.
      *
-     * @param remetente  O login do usuário que enviou a mensagem
-     * @param conteudo   O conteúdo da mensagem
-     * @param comunidade O nome da comunidade onde a mensagem foi enviada
+     * @param remetente  Login do usuário que enviou a mensagem
+     * @param conteudo   Conteúdo da mensagem
+     * @param comunidade Nome da comunidade onde a mensagem foi enviada
      */
     public Mensagem(String remetente, String conteudo, String comunidade) {
         this.remetente = remetente;
@@ -30,7 +37,7 @@ public class Mensagem implements Serializable {
     /**
      * Obtém o remetente da mensagem.
      *
-     * @return O login do usuário que enviou a mensagem
+     * @return Login do usuário que enviou a mensagem
      */
     public String getRemetente() {
         return remetente;
@@ -39,7 +46,7 @@ public class Mensagem implements Serializable {
     /**
      * Obtém o conteúdo da mensagem.
      *
-     * @return O conteúdo da mensagem
+     * @return Conteúdo da mensagem
      */
     public String getConteudo() {
         return conteudo;
@@ -48,7 +55,7 @@ public class Mensagem implements Serializable {
     /**
      * Obtém o nome da comunidade onde a mensagem foi enviada.
      *
-     * @return O nome da comunidade
+     * @return Nome da comunidade
      */
     public String getComunidade() {
         return comunidade;
@@ -57,7 +64,7 @@ public class Mensagem implements Serializable {
     /**
      * Retorna uma representação em string da mensagem.
      *
-     * @return Uma string formatada com as informações da mensagem
+     * @return Conteúdo da mensagem
      */
     @Override
     public String toString() {

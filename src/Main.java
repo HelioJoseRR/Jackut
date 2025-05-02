@@ -90,6 +90,6 @@ public class Main {
         EasyAccept.main(args16);
         EasyAccept.main(args17);
         EasyAccept.main(args18);
-        /*EasyAccept.main(args19);*/
+        EasyAccept.main(args19);
     }
 }

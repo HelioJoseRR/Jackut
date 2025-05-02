@@ -2,24 +2,31 @@ package br.ufal.ic.p2.jackut.entities;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 /**
- * A classe Recado representa um recado enviado entre usuários no sistema Jackut.
+ * Representa um recado enviado entre usuários no sistema Jackut.
+ * Um recado possui um remetente, um destinatário e um conteúdo.
  */
 public class Recado implements Serializable {
-    private String remetente;
-    private String destinatario;
-    private String conteudo;
+    /** ID de serialização da classe */
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** Login do remetente do recado */
+    private final String remetente;
+
+    /** Login do destinatário do recado */
+    private final String destinatario;
+
+    /** Conteúdo do recado */
+    private final String conteudo;
+
     /**
-     * Construtor da classe Recado.
+     * Cria um novo recado.
      *
-     * @param remetente    O login do usuário que enviou o recado
-     * @param destinatario O login do usuário que recebeu o recado
-     * @param conteudo     O conteúdo do recado
+     * @param remetente    Login do usuário que enviou o recado
+     * @param destinatario Login do usuário que recebeu o recado
+     * @param conteudo     Conteúdo do recado
      */
     public Recado(String remetente, String destinatario, String conteudo) {
         this.remetente = remetente;
@@ -30,7 +37,7 @@ public class Recado implements Serializable {
     /**
      * Obtém o remetente do recado.
      *
-     * @return O login do usuário que enviou o recado
+     * @return Login do usuário que enviou o recado
      */
     public String getRemetente() {
         return remetente;
@@ -39,7 +46,7 @@ public class Recado implements Serializable {
     /**
      * Obtém o destinatário do recado.
      *
-     * @return O login do usuário que recebeu o recado
+     * @return Login do usuário que recebeu o recado
      */
     public String getDestinatario() {
         return destinatario;
@@ -48,7 +55,7 @@ public class Recado implements Serializable {
     /**
      * Obtém o conteúdo do recado.
      *
-     * @return O conteúdo do recado
+     * @return Conteúdo do recado
      */
     public String getConteudo() {
         return conteudo;
@@ -57,7 +64,7 @@ public class Recado implements Serializable {
     /**
      * Retorna uma representação em string do recado.
      *
-     * @return Uma string formatada com as informações do recado
+     * @return String no formato "remetente: conteúdo"
      */
     @Override
     public String toString() {

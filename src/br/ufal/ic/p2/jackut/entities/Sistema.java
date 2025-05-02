@@ -7,18 +7,28 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * A classe Sistema representa o sistema principal do Jackut.
+ * Classe principal que gerencia todas as entidades do sistema Jackut.
+ * Controla usuários, comunidades, sessões e todas as operações relacionadas.
  */
 public class Sistema implements Serializable {
-    private Map<String, Usuario> usuarios;
-    private Map<String, Comunidade> comunidades;
-    private Map<String, String> sessoes; // Map de sessionId para login
-    private int nextSessionId;
+    /** ID de serialização da classe */
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** Mapa de usuários do sistema (login -> Usuario) */
+    private Map<String, Usuario> usuarios;
+
+    /** Mapa de comunidades do sistema (nome -> Comunidade) */
+    private Map<String, Comunidade> comunidades;
+
+    /** Mapa de sessões ativas (sessionId -> login) */
+    private Map<String, String> sessoes;
+
+    /** Contador para gerar IDs de sessão únicos */
+    private int nextSessionId;
+
     /**
-     * Construtor da classe Sistema.
+     * Cria uma nova instância do sistema com estruturas vazias.
      */
     public Sistema() {
         this.usuarios = new HashMap<>();
@@ -28,7 +38,7 @@ public class Sistema implements Serializable {
     }
 
     /**
-     * Reseta o sistema.
+     * Reinicia o sistema, limpando todas as coleções.
      */
     public void zerarSistema() {
         this.usuarios = new HashMap<>();
@@ -39,6 +49,9 @@ public class Sistema implements Serializable {
 
     /**
      * Verifica se um usuário existe no sistema.
+     *
+     * @param login Login do usuário
+     * @return true se o usuário existe, false caso contrário
      */
     public boolean verificaUsuarioExiste(String login) {
         return this.usuarios.containsKey(login);
@@ -46,17 +59,24 @@ public class Sistema implements Serializable {
 
     /**
      * Retorna um usuário pelo login.
+     * Lança exceção se o usuário não existir.
+     *
+     * @param login Login do usuário
+     * @return Objeto Usuario correspondente
+     * @throws UserNotFoundException se o usuário não existir
      */
     private Usuario getUsuarioPeloLogin(String login) {
         if (!verificaUsuarioExiste(login)) {
             throw new UserNotFoundException("Usuário não cadastrado.");
         }
-
         return usuarios.get(login);
     }
 
     /**
      * Obtém o login associado a uma sessão.
+     *
+     * @param sessionId ID da sessão
+     * @return Login do usuário da sessão, ou null se a sessão não existir
      */
     public String getLoginDaSessao(String sessionId) {
         return sessoes.get(sessionId);
@@ -369,7 +389,7 @@ public class Sistema implements Serializable {
         String login = getLoginDaSessao(sessionId);
 
         Mensagem novaMensagem = new Mensagem(login, mensagem, comunidade);
-        
+
         for(Usuario usuario : usuarios.values()) {
             if(usuario.getComunidadesCadastradas().contains(comunidade)) {
                 usuario.adicionarMensagem(novaMensagem);
