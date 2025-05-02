@@ -2,7 +2,7 @@ package br.ufal.ic.p2.jackut.entities;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Vector;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -28,7 +28,7 @@ public class Comunidade implements Serializable {
     private String dono;
 
     /** Lista de membros da comunidade */
-    private Vector<String> membros;
+    private List<String> membros;
 
     /**
      * Cria uma nova comunidade com nome e descrição especificados.
@@ -41,7 +41,7 @@ public class Comunidade implements Serializable {
         this.sessionID = sessionID;
         this.nome = nome;
         this.descricao = descricao;
-        this.membros = new Vector<>();
+        this.membros = new ArrayList<>();
         this.dono = "";
     }
 
@@ -112,7 +112,7 @@ public class Comunidade implements Serializable {
      *
      * @return Vector contendo os logins dos membros
      */
-    public Vector<String> getMembrosList() {
+    public List<String> getMembrosList() {
         return membros;
     }
 
@@ -123,5 +123,13 @@ public class Comunidade implements Serializable {
      */
     public String getDono() {
         return dono;
+    }
+
+    public void removeMembro(String login){
+        for (String membro : membros) {
+            if (membro.equals(login)) {
+                membros.remove(membro);
+            }
+        }
     }
 }

@@ -16,31 +16,28 @@ import java.util.stream.Collectors;
 public class Usuario implements Serializable {
     /** ID de serialização da classe */
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static long serialVersionUID = 1L;
 
     /** Login do usuário (identificador único) */
-    private final String login;
+    private  String login;
 
     /** Senha do usuário */
-    private final String senha;
+    private  String senha;
 
     /** Nome do usuário */
-    private final String nome;
+    private  String nome;
 
     /** Atributos personalizados do perfil */
-    private final Map<String, String> atributos;
-
-    /** Fila de recados recebidos */
-    private Queue<Recado> recados;
+    private  Map<String, String> atributos;
 
     /** Lista de comunidades das quais o usuário participa */
-    private final List<String> comunidadesCadastradas;
+    private  List<String> comunidadesCadastradas;
 
     /** Fila de mensagens recebidas */
-    private final Queue<Mensagem> mensagens;
+    private  Queue<Mensagem> mensagens;
 
     /** Gerenciador de relacionamentos do usuário */
-    private final Relacionamento relacionamentos;
+    private  Relacionamento relacionamentos;
 
     /**
      * Cria um novo usuário com as informações básicas.
@@ -54,7 +51,6 @@ public class Usuario implements Serializable {
         this.senha = senha;
         this.nome = nome;
         this.atributos = new HashMap<>();
-        this.recados = new LinkedList<>();
         this.comunidadesCadastradas = new ArrayList<>();
         this.mensagens = new LinkedList<>();
         this.relacionamentos = new Relacionamento();
@@ -159,26 +155,6 @@ public class Usuario implements Serializable {
     }
 
     /**
-     * Adiciona um recado à fila de recados do usuário.
-     *
-     * @param remetente Login do usuário que enviou o recado
-     * @param conteudo  Conteúdo do recado
-     */
-    public void adicionarRecado(String remetente, String conteudo) {
-        Recado recado = new Recado(remetente, this.login, conteudo);
-        recados.add(recado);
-    }
-
-    /**
-     * Obtém a fila de recados do usuário.
-     *
-     * @return Fila de recados
-     */
-    public Queue<Recado> getRecados() {
-        return this.recados;
-    }
-
-    /**
      * Adiciona uma comunidade à lista de comunidades do usuário.
      *
      * @param comunidade Nome da comunidade a ser adicionada
@@ -222,15 +198,6 @@ public class Usuario implements Serializable {
      */
     public Set<String> getIdolos() {
         return this.relacionamentos.getIdolos();
-    }
-
-    /**
-     * Adiciona um ídolo à lista de ídolos do usuário.
-     *
-     * @param idolo Login do ídolo a ser adicionado
-     */
-    public void adicionarIdolo(String idolo) {
-        this.relacionamentos.adicionarIdolo(idolo);
     }
 
     /**
@@ -294,21 +261,7 @@ public class Usuario implements Serializable {
         return this.relacionamentos.getInimigos().contains(inimigo);
     }
 
-    /**
-     * Remove uma comunidade da lista de comunidades do usuário.
-     *
-     * @param comunidade Nome da comunidade a ser removida
-     */
-    public void removerComunidade(String comunidade) {
-        this.comunidadesCadastradas.remove(comunidade);
-    }
-
-    /**
-     * Substitui a fila de recados do usuário.
-     *
-     * @param recados Nova fila de recados
-     */
-    public void setRecados(Queue<Recado> recados) {
-        this.recados = recados;
+    public void removerComunidadeCadastrada(String nome) {
+        comunidadesCadastradas.removeIf(com -> com.equals(nome));
     }
 }

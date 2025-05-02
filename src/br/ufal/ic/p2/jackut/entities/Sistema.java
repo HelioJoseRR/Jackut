@@ -18,11 +18,12 @@ public class Sistema implements Serializable {
     /** Mapa de usuários do sistema (login -> Usuario) */
     private Map<String, Usuario> usuarios;
 
-    /** Mapa de comunidades do sistema (nome -> Comunidade) */
-    private Map<String, Comunidade> comunidades;
-
     /** Mapa de sessões ativas (sessionId -> login) */
     private Map<String, String> sessoes;
+
+    private Map<String, List<Recado>> recados;
+    private Map<String, Comunidade> comunidades; // existente (nome -> Comunidade)
+    private Map<String, Set<String>> donoParaComunidades; // novo: dono -> comunidades
 
     /** Contador para gerar IDs de sessão únicos */
     private int nextSessionId;
@@ -34,6 +35,8 @@ public class Sistema implements Serializable {
         this.usuarios = new HashMap<>();
         this.comunidades = new HashMap<>();
         this.sessoes = new HashMap<>();
+        this.recados = new HashMap<>();
+        this.donoParaComunidades = new HashMap<>();
         this.nextSessionId = 1;
     }
 
@@ -44,6 +47,8 @@ public class Sistema implements Serializable {
         this.usuarios = new HashMap<>();
         this.comunidades = new HashMap<>();
         this.sessoes = new HashMap<>();
+        this.recados = new HashMap<>();
+        this.donoParaComunidades = new HashMap<>();
         this.nextSessionId = 1;
     }
 
@@ -130,6 +135,8 @@ public class Sistema implements Serializable {
         if (verificaUsuarioExiste(login)) {
             throw new InvalidUserDataException("Conta com esse nome já existe.");
         }
+
+        donoParaComunidades.putIfAbsent(login, new HashSet<>());
 
         usuarios.put(login, new Usuario(login, senha, nome));
     }
@@ -252,7 +259,8 @@ public class Sistema implements Serializable {
             throw new RelacionamentoException("Função inválida: " + dest.getNome() + " é seu inimigo.");
         }
 
-        dest.adicionarRecado(remetente.getLogin(), recado);
+        recados.putIfAbsent(dest.getLogin(), new LinkedList<>());
+        recados.get(dest.getLogin()).add(new Recado(remetente.getLogin(), dest.getLogin(), recado));
     }
 
     /**
@@ -260,12 +268,13 @@ public class Sistema implements Serializable {
      */
     public String lerRecado(String sessionId) {
         Usuario usuario = getUsuarioDaSessao(sessionId);
+        recados.putIfAbsent(usuario.getLogin(), new LinkedList<>());
 
-        if (usuario.getRecados().isEmpty()) {
+        if (getRecados(usuario.getLogin()).isEmpty()) {
             throw new MessageException("Não há recados.");
         }
 
-        Recado recado = usuario.getRecados().poll();
+        Recado recado = getRecados(usuario.getLogin()).removeFirst();
 
         return recado.getConteudo();
     }
@@ -286,6 +295,7 @@ public class Sistema implements Serializable {
         Comunidade comunidade = new Comunidade(sessionId, nome, descricao);
         comunidade.addMembro(login);
         comunidades.put(nome, comunidade);
+        donoParaComunidades.get(login).add(nome);
 
         this.usuarios.get(login).addComunidade(nome);
     }
@@ -317,6 +327,7 @@ public class Sistema implements Serializable {
         if (!comunidades.containsKey(nome)) {
             throw new CommunityException("Comunidade não existe.");
         }
+
         return comunidades.get(nome).getMembros();
     }
 
@@ -444,7 +455,8 @@ public class Sistema implements Serializable {
     }
 
     public void adicionarRecadoJackut(String login, String recado){
-        this.usuarios.get(login).adicionarRecado("jackut", recado + " é seu paquera - Recado do Jackut.");
+        this.recados.putIfAbsent(login, new ArrayList<>());
+        this.recados.get(login).add(new Recado("jackut", login,recado + " é seu paquera - Recado do Jackut."));
     }
 
     public void adicionarPaquera(String sessionId, String paquera){
@@ -489,45 +501,50 @@ public class Sistema implements Serializable {
         usuario.adicionarInimigo(inimigo);
     }
 
-    public void removerUsuario(String sessionId){
+    /**
+     * Obtém a fila de recados do usuário.
+     *
+     * @return Fila de recados
+     */
+
+    public List<Recado> getRecados(String login) {
+        return this.recados.get(login);
+    }
+
+    public void removerUsuario(String sessionId) {
         String login = getLoginDaSessao(sessionId);
         Usuario removido = usuarios.remove(login);
-        String sessaoRemovida = sessoes.remove(sessionId);
+        sessoes.remove(sessionId);
 
-        if (sessaoRemovida == null || removido == null) {
+        if (removido == null) {
             throw new UserNotFoundException("Usuário não cadastrado.");
         }
 
-        Iterator<Map.Entry<String, Comunidade>> iter = comunidades.entrySet().iterator();
-        while (iter.hasNext()) {
-            Map.Entry<String, Comunidade> entry = iter.next();
-            String nomeComunidade = entry.getKey();
-            Comunidade com = entry.getValue();
-
-            // Supondo que Comunidade.getDono() retorna o login do dono
-            if (com.getDono().equals(login)) {
+        // Remover comunidades onde o usuário é DONO
+        Set<String> comunidadesDoDono = donoParaComunidades.getOrDefault(login, new HashSet<>());
+        Iterator<String> iterator = comunidadesDoDono.iterator();
+        while (iterator.hasNext()) {
+            String comunidadeNome = iterator.next();
+            Comunidade comunidade = comunidades.get(comunidadeNome);
+            if (comunidade != null) {
                 // Remove a comunidade de todos os membros
-                for (String membro : com.getMembrosList()) {
-                    Usuario u = usuarios.get(membro);
-                    if (u != null) {
-                        u.removerComunidade(nomeComunidade);
+                for (String membro : comunidade.getMembrosList()) {
+                    Usuario usuarioMembro = usuarios.get(membro);
+                    if (usuarioMembro != null) {
+                        usuarioMembro.removerComunidadeCadastrada(comunidadeNome);
                     }
                 }
-                // Remove a comunidade do sistema
-                iter.remove();
+                comunidades.remove(comunidadeNome); // Remove do mapa de comunidades
             }
+            iterator.remove(); // Remove do conjunto do dono
         }
 
-        // Remove recados enviados por esse usuário dos outros usuários
-        for (Usuario u : usuarios.values()) {
-            Queue<Recado> recadosFiltrados = new LinkedList<>();
-            for (Recado r : u.getRecados()) {
-                if (!r.getRemetente().equals(login)) {
-                    recadosFiltrados.add(r);
-                }
-            }
+        donoParaComunidades.remove(login);
 
-            u.setRecados(recadosFiltrados);
+        // Remover recados enviados pelo usuário
+        for (List<Recado> listaRecados : recados.values()) {
+            listaRecados.removeIf(recado -> recado.getRemetente().equals(login));
         }
+        recados.remove(login); // Remove os recados recebidos pelo usuário
     }
 }
