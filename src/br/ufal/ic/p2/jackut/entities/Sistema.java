@@ -401,10 +401,10 @@ public class Sistema implements Serializable {
 
         Mensagem novaMensagem = new Mensagem(login, mensagem, comunidade);
 
-        for(Usuario usuario : usuarios.values()) {
-            if(usuario.getComunidadesCadastradas().contains(comunidade)) {
-                usuario.adicionarMensagem(novaMensagem);
-            }
+        List<String> membros = comunidades.get(comunidade).getMembrosList();
+
+        for (String membro : membros) {
+            getUsuarioPeloLogin(membro).adicionarMensagem(novaMensagem);
         }
     }
 
