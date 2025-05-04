@@ -6,36 +6,21 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Classe principal que gerencia todas as entidades do sistema Jackut.
- * Controla usuários, comunidades, sessões e todas as operações relacionadas.
- */
 public class Sistema implements Serializable {
-    /** ID de serialização da classe */
     @Serial
     private static final long serialVersionUID = 1L;
-
-    /** Mapa de usuários do sistema (login -> Usuario) */
     private Map<String, Usuario> usuarios;
-
-    /** Mapa de sessões ativas (sessionId -> login) */
     private Map<String, String> sessoes;
-
-    private Map<String, List<Recado>> recados;
-    private Map<String, Comunidade> comunidades; // existente (nome -> Comunidade)
-    private Map<String, Set<String>> donoParaComunidades; // novo: dono -> comunidades
-
-    /** Contador para gerar IDs de sessão únicos */
+    private Map<String, List<Comunicacao>> mensagemRecado;
+    private Map<String, Comunidade> comunidades;
+    private Map<String, Set<String>> donoParaComunidades;
     private int nextSessionId;
 
-    /**
-     * Cria uma nova instância do sistema com estruturas vazias.
-     */
     public Sistema() {
         this.usuarios = new HashMap<>();
         this.comunidades = new HashMap<>();
         this.sessoes = new HashMap<>();
-        this.recados = new HashMap<>();
+        this.mensagemRecado = new HashMap<>();
         this.donoParaComunidades = new HashMap<>();
         this.nextSessionId = 1;
     }
@@ -47,7 +32,7 @@ public class Sistema implements Serializable {
         this.usuarios = new HashMap<>();
         this.comunidades = new HashMap<>();
         this.sessoes = new HashMap<>();
-        this.recados = new HashMap<>();
+        this.mensagemRecado = new HashMap<>();
         this.donoParaComunidades = new HashMap<>();
         this.nextSessionId = 1;
     }
@@ -259,8 +244,8 @@ public class Sistema implements Serializable {
             throw new RelacionamentoException("Função inválida: " + dest.getNome() + " é seu inimigo.");
         }
 
-        recados.putIfAbsent(dest.getLogin(), new LinkedList<>());
-        recados.get(dest.getLogin()).add(new Recado(remetente.getLogin(), dest.getLogin(), recado));
+        mensagemRecado.putIfAbsent(dest.getLogin(), new LinkedList<>());
+        mensagemRecado.get(dest.getLogin()).add(Comunicacao.criarRecado(remetente.getLogin(), dest.getLogin(), recado));
     }
 
     /**
@@ -268,15 +253,38 @@ public class Sistema implements Serializable {
      */
     public String lerRecado(String sessionId) {
         Usuario usuario = getUsuarioDaSessao(sessionId);
-        recados.putIfAbsent(usuario.getLogin(), new LinkedList<>());
+        mensagemRecado.putIfAbsent(usuario.getLogin(), new LinkedList<>());
 
-        if (getRecados(usuario.getLogin()).isEmpty()) {
+        List<Comunicacao> recadosUsuario = getMensagensDoTipo(usuario.getLogin(), "recado");
+
+        if (recadosUsuario.isEmpty()) {
             throw new MessageException("Não há recados.");
         }
 
-        Recado recado = getRecados(usuario.getLogin()).removeFirst();
+        Comunicacao recado = recadosUsuario.remove(0);
+        mensagemRecado.get(usuario.getLogin()).remove(recado);
 
         return recado.getConteudo();
+    }
+
+    /**
+     * Filtra mensagens por tipo para um usuário específico.
+     *
+     * @param login Login do usuário
+     * @param tipo Tipo de mensagem ("recado" ou "comunidade")
+     * @return Lista de mensagens do tipo especificado
+     */
+    private List<Comunicacao> getMensagensDoTipo(String login, String tipo) {
+        List<Comunicacao> mensagensDoTipo = new ArrayList<>();
+        List<Comunicacao> todasMensagens = mensagemRecado.getOrDefault(login, new ArrayList<>());
+
+        for (Comunicacao mensagem : todasMensagens) {
+            if (tipo.equals(mensagem.getTipo())) {
+                mensagensDoTipo.add(mensagem);
+            }
+        }
+
+        return mensagensDoTipo;
     }
 
     /**
@@ -376,13 +384,19 @@ public class Sistema implements Serializable {
             throw new SessionNotFoundException("Sessão inválida ou expirada.");
         }
 
-        Usuario usuario = getUsuarioPeloLogin(getLoginDaSessao(sessionId));
+        String login = getLoginDaSessao(sessionId);
+        mensagemRecado.putIfAbsent(login, new ArrayList<>());
 
-        if (usuario.getMensagens().isEmpty()) {
+        List<Comunicacao> mensagensComunidade = getMensagensDoTipo(login, "comunidade");
+
+        if (mensagensComunidade.isEmpty()) {
             throw new MessageException("Não há mensagens.");
         }
 
-        return usuario.getMensagens().poll().toString();
+        Comunicacao mensagem = mensagensComunidade.remove(0);
+        mensagemRecado.get(login).remove(mensagem);
+
+        return mensagem.toString();
     }
 
     /**
@@ -399,12 +413,13 @@ public class Sistema implements Serializable {
 
         String login = getLoginDaSessao(sessionId);
 
-        Mensagem novaMensagem = new Mensagem(login, mensagem, comunidade);
+        Comunicacao novaMensagem = Comunicacao.criarMensagemComunidade(login, comunidade, mensagem);
 
         List<String> membros = comunidades.get(comunidade).getMembrosList();
 
         for (String membro : membros) {
-            getUsuarioPeloLogin(membro).adicionarMensagem(novaMensagem);
+            mensagemRecado.putIfAbsent(membro, new ArrayList<>());
+            mensagemRecado.get(membro).add(novaMensagem);
         }
     }
 
@@ -418,12 +433,6 @@ public class Sistema implements Serializable {
         Usuario usuario = this.getUsuarioDaSessao(id);
         Usuario idoloObj = getUsuarioPeloLogin(idolo);
 
-
-
-        if (this.getUsuarioDaSessao(id).getLogin().equals(idolo)) {
-            throw new RelacionamentoException("Usuário não pode ser fã de si mesmo.");
-        }
-
         if (usuario.getIdolos().contains(idolo)) {
             throw new RelacionamentoException("Usuário já está adicionado como ídolo.");
         }
@@ -432,9 +441,7 @@ public class Sistema implements Serializable {
             throw new RelacionamentoException("Função inválida: " + idoloObj.getNome() + " é seu inimigo.");
         }
 
-        usuario.getIdolos().add(idolo);
-
-        return;
+        usuario.adicionarIdolo(idolo);
     }
 
     public String getFas(String login) {
@@ -455,8 +462,8 @@ public class Sistema implements Serializable {
     }
 
     public void adicionarRecadoJackut(String login, String recado){
-        this.recados.putIfAbsent(login, new ArrayList<>());
-        this.recados.get(login).add(new Recado("jackut", login,recado + " é seu paquera - Recado do Jackut."));
+        this.mensagemRecado.putIfAbsent(login, new ArrayList<>());
+        this.mensagemRecado.get(login).add(Comunicacao.criarRecado("jackut", login, recado + " é seu paquera - Recado do Jackut."));
     }
 
     public void adicionarPaquera(String sessionId, String paquera){
@@ -481,8 +488,6 @@ public class Sistema implements Serializable {
             adicionarRecadoJackut(usuario.getLogin(), paqueraObj.getNome());
             adicionarRecadoJackut(paqueraObj.getLogin(), usuario.getNome());
         }
-
-        return;
     }
 
     public String getPaqueras(String sessionId){
@@ -499,16 +504,6 @@ public class Sistema implements Serializable {
         }
 
         usuario.adicionarInimigo(inimigo);
-    }
-
-    /**
-     * Obtém a fila de recados do usuário.
-     *
-     * @return Fila de recados
-     */
-
-    public List<Recado> getRecados(String login) {
-        return this.recados.get(login);
     }
 
     public void removerUsuario(String sessionId) {
@@ -541,10 +536,10 @@ public class Sistema implements Serializable {
 
         donoParaComunidades.remove(login);
 
-        // Remover recados enviados pelo usuário
-        for (List<Recado> listaRecados : recados.values()) {
-            listaRecados.removeIf(recado -> recado.getRemetente().equals(login));
+        // Remover mensagens enviadas pelo usuário
+        for (List<Comunicacao> listaMensagens : mensagemRecado.values()) {
+            listaMensagens.removeIf(mensagem -> mensagem.getRemetente().equals(login));
         }
-        recados.remove(login); // Remove os recados recebidos pelo usuário
+        mensagemRecado.remove(login); // Remove as mensagens recebidas pelo usuário
     }
 }

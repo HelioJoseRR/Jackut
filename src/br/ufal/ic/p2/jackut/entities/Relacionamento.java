@@ -9,25 +9,12 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Representa os relacionamentos de um usuário no sistema Jackut.
- * Gerencia diferentes tipos de relacionamentos: amigos, fãs, paqueras e inimigos.
- */
 public class Relacionamento implements Serializable {
-    /** ID de serialização da classe */
     @Serial
     private static final long serialVersionUID = 1L;
-
-    /** Mapa de relacionamentos categorizados por tipo */
     private final Map<String, Set<String>> relacionamentos;
-
-    /** Conjunto de convites de amizade pendentes */
     private final Set<String> convitesAmizade;
 
-    /**
-     * Cria uma nova instância de Relacionamento.
-     * Inicializa as estruturas de dados para cada tipo de relacionamento.
-     */
     public Relacionamento() {
         this.convitesAmizade = new LinkedHashSet<>();
         this.relacionamentos = new HashMap<>();

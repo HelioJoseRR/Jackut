@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 /**
  * Representa um usuário no sistema Jackut.
  * Um usuário possui login, senha, nome, atributos personalizados e
- * mantém listas de relacionamentos, recados, mensagens e comunidades.
+ * mantém listas de relacionamentos, mensagens e comunidades.
  */
 public class Usuario implements Serializable {
     /** ID de serialização da classe */
@@ -19,25 +19,22 @@ public class Usuario implements Serializable {
     private static long serialVersionUID = 1L;
 
     /** Login do usuário (identificador único) */
-    private  String login;
+    private String login;
 
     /** Senha do usuário */
-    private  String senha;
+    private String senha;
 
     /** Nome do usuário */
-    private  String nome;
+    private String nome;
 
     /** Atributos personalizados do perfil */
-    private  Map<String, String> atributos;
+    private Map<String, String> atributos;
 
     /** Lista de comunidades das quais o usuário participa */
-    private  List<String> comunidadesCadastradas;
-
-    /** Fila de mensagens recebidas */
-    private  Queue<Mensagem> mensagens;
+    private List<String> comunidadesCadastradas;
 
     /** Gerenciador de relacionamentos do usuário */
-    private  Relacionamento relacionamentos;
+    private Relacionamento relacionamentos;
 
     /**
      * Cria um novo usuário com as informações básicas.
@@ -52,7 +49,6 @@ public class Usuario implements Serializable {
         this.nome = nome;
         this.atributos = new HashMap<>();
         this.comunidadesCadastradas = new ArrayList<>();
-        this.mensagens = new LinkedList<>();
         this.relacionamentos = new Relacionamento();
     }
 
@@ -174,30 +170,27 @@ public class Usuario implements Serializable {
     }
 
     /**
-     * Obtém as mensagens do usuário.
-     *
-     * @return Fila de mensagens
-     */
-    public Queue<Mensagem> getMensagens() {
-        return this.mensagens;
-    }
-
-    /**
-     * Adiciona uma mensagem à fila de mensagens do usuário.
-     *
-     * @param mensagem Mensagem a ser adicionada
-     */
-    public void adicionarMensagem(Mensagem mensagem) {
-        this.mensagens.add(mensagem);
-    }
-
-    /**
      * Obtém a lista de ídolos (usuários dos quais é fã).
      *
      * @return Conjunto de logins dos ídolos
      */
     public Set<String> getIdolos() {
         return this.relacionamentos.getIdolos();
+    }
+
+    /**
+     * Adiciona um usuário à lista de inimigos.
+     * Lança exceção se o usuário tentar adicionar a si mesmo como inimigo.
+     *
+     * @param idolo Login do usuário a ser adicionado como inimigo
+     * @throws RelacionamentoException se o usuário tentar adicionar a si mesmo como inimigo
+     */
+    public void adicionarIdolo(String idolo) {
+        if (this.login.equals(idolo)) {
+            throw new RelacionamentoException("Usuário não pode ser fã de si mesmo.");
+        }
+
+        this.relacionamentos.adicionarIdolo(idolo);
     }
 
     /**
@@ -248,6 +241,7 @@ public class Usuario implements Serializable {
         if (this.login.equals(inimigo)) {
             throw new RelacionamentoException("Usuário não pode ser inimigo de si mesmo.");
         }
+
         this.relacionamentos.adicionarInimigo(inimigo);
     }
 
@@ -261,6 +255,11 @@ public class Usuario implements Serializable {
         return this.relacionamentos.getInimigos().contains(inimigo);
     }
 
+    /**
+     * Remove uma comunidade da lista de comunidades cadastradas do usuário.
+     *
+     * @param nome Nome da comunidade a ser removida
+     */
     public void removerComunidadeCadastrada(String nome) {
         comunidadesCadastradas.removeIf(com -> com.equals(nome));
     }

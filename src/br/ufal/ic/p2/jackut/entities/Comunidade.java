@@ -5,29 +5,12 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Representa uma comunidade no sistema Jackut.
- * Uma comunidade possui um nome, descrição e um conjunto de membros.
- * O primeiro membro a ser adicionado torna-se automaticamente o dono da comunidade.
- */
 public class Comunidade implements Serializable {
-    /** ID de serialização da classe */
     @Serial
     private static final long serialVersionUID = 1L;
-
-    /** ID da sessão do criador da comunidade */
     private final String sessionID;
-
-    /** Nome da comunidade */
     private final String nome;
-
-    /** Descrição da comunidade */
     private final String descricao;
-
-    /** Login do dono da comunidade */
-    private String dono;
-
-    /** Lista de membros da comunidade */
     private List<String> membros;
 
     /**
@@ -42,7 +25,6 @@ public class Comunidade implements Serializable {
         this.nome = nome;
         this.descricao = descricao;
         this.membros = new ArrayList<>();
-        this.dono = "";
     }
 
     /**
@@ -80,9 +62,6 @@ public class Comunidade implements Serializable {
      */
     public void addMembro(String login) {
         if (!membros.contains(login)) {
-            if (membros.isEmpty()) {
-                dono = login;
-            }
             membros.add(login);
         }
     }
@@ -114,22 +93,5 @@ public class Comunidade implements Serializable {
      */
     public List<String> getMembrosList() {
         return membros;
-    }
-
-    /**
-     * Obtém o dono da comunidade.
-     *
-     * @return Login do dono da comunidade
-     */
-    public String getDono() {
-        return dono;
-    }
-
-    public void removeMembro(String login){
-        for (String membro : membros) {
-            if (membro.equals(login)) {
-                membros.remove(membro);
-            }
-        }
     }
 }
