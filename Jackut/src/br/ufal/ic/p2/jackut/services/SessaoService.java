@@ -8,21 +8,36 @@ import java.io.Serializable;
 
 /**
  * Serviço responsável por gerenciar sessões de usuários.
+ * Permite abrir e encerrar sessões, além de validar credenciais.
  */
 public class SessaoService implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    /** Repositório central de dados */
     private final DataRepository repository;
+
+    /** Serviço de usuários */
     private final UsuarioService usuarioService;
 
+    /**
+     * Construtor que inicializa o serviço com as dependências necessárias.
+     *
+     * @param repository Repositório central de dados
+     * @param usuarioService Serviço de usuários
+     */
     public SessaoService(DataRepository repository, UsuarioService usuarioService) {
         this.repository = repository;
         this.usuarioService = usuarioService;
     }
 
     /**
-     * Abre uma sessão para um usuário.
+     * Abre uma sessão para um usuário após validar suas credenciais.
+     *
+     * @param login Login do usuário
+     * @param senha Senha do usuário
+     * @return ID da sessão criada
+     * @throws AuthenticationException Se as credenciais forem inválidas
      */
     public String abrirSessao(String login, String senha) {
         if (!usuarioService.existeUsuario(login)) {
@@ -38,6 +53,9 @@ public class SessaoService implements Serializable {
 
     /**
      * Encerra uma sessão específica.
+     *
+     * @param sessionId ID da sessão a ser encerrada
+     * @return true se a sessão foi encerrada, false se não existia
      */
     public boolean encerrarSessao(String sessionId) {
         if (repository.existeSessao(sessionId)) {
@@ -49,6 +67,9 @@ public class SessaoService implements Serializable {
 
     /**
      * Verifica se uma sessão existe.
+     *
+     * @param sessionId ID da sessão
+     * @return true se a sessão existir, false caso contrário
      */
     public boolean existeSessao(String sessionId) {
         return repository.existeSessao(sessionId);
@@ -56,6 +77,9 @@ public class SessaoService implements Serializable {
 
     /**
      * Obtém o login do usuário associado a uma sessão.
+     *
+     * @param sessionId ID da sessão
+     * @return Login do usuário ou null se a sessão não existir
      */
     public String getLoginDaSessao(String sessionId) {
         return repository.getLoginDaSessao(sessionId);
@@ -63,6 +87,11 @@ public class SessaoService implements Serializable {
 
     /**
      * Valida uma sessão e retorna o login associado.
+     * Também suporta o caso em que o próprio sessionId é um login válido.
+     *
+     * @param sessionId ID da sessão ou login do usuário
+     * @return Login do usuário
+     * @throws SessionNotFoundException Se a sessão não existir e o sessionId não for um login válido
      */
     public String validarEObterLogin(String sessionId) {
         // Verifica se o sessionId é null ou vazio
@@ -85,7 +114,7 @@ public class SessaoService implements Serializable {
     }
 
     /**
-     * Zera todas as sessões.
+     * Remove todas as sessões do sistema.
      */
     public void zerarSessoes() {
         repository.getSessoes().clear();
